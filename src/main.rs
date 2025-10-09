@@ -1,17 +1,35 @@
 mod common;
 
 use common::message;
+use std::io::Write;
+
+use anthropic;
 
 fn main() {
     message::print_initial_message();
 
-    while let Some(Ok(input)) = std::io::stdin().lines().next() {
-        if input.trim() == "exit" {
-            println!("Exiting Rustbot. Goodbye!");
-            break;
-        } else {
-            let response = message::get_response_for_input(&input);
-            println!("{}", response);
+    let mut messages = Vec::<anthropic::types::Message>::new();
+
+    while {
+        print!("> ");
+        std::io::stdout().flush().unwrap();
+        true
+    } {
+        match std::io::stdin().lines().next() {
+            Some(Ok(input)) => {
+                if input.trim() == "exit" {
+                    println!("Exiting rustbot. Goodbye!");
+                    break;
+                } else {
+                    let response = message::get_response_for_input(&input, &mut messages);
+                    println!("{}", response);
+                }
+            }
+            Some(Err(err)) => {
+                eprintln!("error: {}", err);
+                break;
+            }
+            None => break
         }
     }
 }
