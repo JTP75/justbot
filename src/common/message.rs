@@ -2,6 +2,8 @@ use anthropic;
 use tokio;
 use dotenv::dotenv; 
 
+static mut CUMULATIVE_TOKENS: usize = 0;
+
 pub fn print_initial_message() {
     println!("Hi, I'm rustbot! Type 'help' to see what I can do.\n");
 }
@@ -29,7 +31,9 @@ pub fn get_response_for_input(input: &str, messages: &mut Vec<anthropic::types::
 
             match result {
                 Ok(response) => response,
-                Err(e) => format!("Error communicating with Claude: {}", e)
+                Err(e) => {
+                    format!("Error communicating with Claude: {}", e)
+                }
             }
         }
         _ => "Unknown command. Type 'help' for a list of commands.".to_string(),
@@ -38,35 +42,47 @@ pub fn get_response_for_input(input: &str, messages: &mut Vec<anthropic::types::
 
 async fn get_claude_response(messages: &mut Vec<anthropic::types::Message>) -> Result<String, Box<dyn std::error::Error>> {
     dotenv().ok();
+    
     let api_key = std::env::var("API_KEY").expect("API_KEY must be set in .env file");
 
     let client = anthropic::client::ClientBuilder::default()
         .api_key(api_key)
         .build()?;
     
-    if let Some(message) = messages.last() {
-        let request = anthropic::types::MessagesRequestBuilder::default()
-            .model("claude-sonnet-4-5-20250929".to_string())
-            .max_tokens(1024usize)
-            .messages(&messages[..])
-            .build()?;
+    let request = anthropic::types::MessagesRequestBuilder::default()
+        .model("claude-sonnet-4-5-20250929".to_string())
+        .max_tokens(1024usize)
+        .messages(&messages[..])
+        .build()?;
 
-        let response = client.messages(request).await?;
-        match &response.content[0] {
-            anthropic::types::ContentBlock::Text { text } => {
-                messages.push(
-                    anthropic::types::Message {
-                        role: anthropic::types::Role::Assistant,
-                        content: vec![anthropic::types::ContentBlock::Text {
-                            text: text.clone()
-                        }]
-                    }
-                );
-                Ok(text.clone())
-            },
-            _ => Err("Unexpected content block type".into()),
-        }
-    } else {
-        Err("Bad message input".into())
+    let response = client.messages(request).await?;
+
+    let input_tokens = response.usage.input_tokens;
+    let output_tokens = response.usage.output_tokens;
+    let total_tokens = input_tokens + output_tokens;
+
+    println!("Input tokens =  {}\nOutput tokens = {}\nTotal tokens =  {}", input_tokens, output_tokens, total_tokens);
+
+#[allow(static_mut_refs)]
+    unsafe {
+        CUMULATIVE_TOKENS += total_tokens;
+        println!("Cumulative = {}", CUMULATIVE_TOKENS);
+    }
+
+    match &response.content[0] {
+        anthropic::types::ContentBlock::Text { text } => {
+            messages.push(
+                anthropic::types::Message {
+                    role: anthropic::types::Role::Assistant,
+                    content: vec![anthropic::types::ContentBlock::Text {
+                        text: text.clone()
+                    }]
+                }
+            );
+            Ok(text.clone())
+        },
+        _ => Err("Unexpected content block type".into()),
     }
 }
+
+// maybe go with this: file-based gen ai: analyze a directory, generate README perhaps, generate other files changelog etc whatwever
