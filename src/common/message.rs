@@ -4,7 +4,8 @@ use tokio;
 static mut CUMULATIVE_TOKENS: usize = 0;
 
 mod system_prompts {
-    pub const BASE_GENERAL: &str = "Your name is rustbot. Your name officially has no meaning in particular. You are being called for general use; you have no particular purpose/tasks";
+    pub const BASE_GENERAL: &str = "Your name is rustbot. Your name officially has no meaning in particular. You are being called for general use. Your response should always be written in english.";
+    pub const BASE_JAPANESE: &str = "Your name is rustbot. Your name officially has no meaning in particular. You are being called for general use. Your response should always be written in japanese.";
 }
 
 pub fn print_initial_message() {
@@ -16,13 +17,25 @@ pub fn get_response_for_input(input: &str, messages: &mut Vec<anthropic::types::
 
     match tokenized[0].to_lowercase().as_str() {
         "hello" => "Hi there!".to_string(),
-        "help" => "Available commands: hello, help, claude <message>, exit".to_string(),
-        "claude" => {
+        "help" => "Available commands: hello, help, general <message>, japanese <message>, exit".to_string(),
+        "general" => {
             if tokenized.len() < 2 {
-                return "Usage: claude <message>".to_string();
+                return "Usage: general <message>".to_string();
             }
 
             match call_anthropic(tokenized, messages, system_prompts::BASE_GENERAL) {
+                Ok(response) => response,
+                Err(e) => {
+                    format!("Error communicating with Claude: {}", e)
+                }
+            }
+        }
+        "japanese" => {
+            if tokenized.len() < 2 {
+                return "Usage: japanese <message>".to_string();
+            }
+
+            match call_anthropic(tokenized, messages, system_prompts::BASE_JAPANESE) {
                 Ok(response) => response,
                 Err(e) => {
                     format!("Error communicating with Claude: {}", e)
