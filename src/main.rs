@@ -2,12 +2,12 @@ mod common;
 
 use common::message;
 use std::io::Write;
-use dotenv::dotenv;
+use dotenvy;
 
 use anthropic;
 
 fn main() {
-    dotenv().ok();
+    dotenvy::from_filename_override(".env").ok();
     
     message::print_initial_message();
 
