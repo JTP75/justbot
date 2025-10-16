@@ -2,13 +2,20 @@ mod common;
 
 use common::message;
 use std::io::Write;
-use dotenvy;
+use std::env;
 
 use anthropic;
+use dotenvy;
 
 fn main() {
-    dotenvy::from_filename_override(".env").ok();
-    
+
+    if let Ok(exe_path) = env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            let env_path = exe_dir.join(".env");
+            dotenvy::from_path(env_path).ok();
+        }
+    }
+
     message::print_initial_message();
 
     let mut messages = Vec::<anthropic::types::Message>::new();
