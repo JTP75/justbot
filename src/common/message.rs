@@ -3,6 +3,10 @@ use tokio;
 
 static mut CUMULATIVE_TOKENS: usize = 0;
 
+mod system_prompts {
+    pub const BASE_GENERAL: &str = "Your name is rustbot. Your name officially has no meaning in particular. You are being called for general use; you have no particular purpose/tasks";
+}
+
 pub fn print_initial_message() {
     println!("Hi, I'm rustbot! Type 'help' to see what I can do.\n");
 }
@@ -18,17 +22,7 @@ pub fn get_response_for_input(input: &str, messages: &mut Vec<anthropic::types::
                 return "Usage: claude <message>".to_string();
             }
 
-            messages.push(anthropic::types::Message {
-                role: anthropic::types::Role::User,
-                content: vec![anthropic::types::ContentBlock::Text {
-                    text: tokenized[1..].join(" ")
-                }]
-            });
-            let result = tokio::runtime::Runtime::new()
-                .unwrap()
-                .block_on(get_claude_response(messages));
-
-            match result {
+            match call_anthropic(tokenized, messages, system_prompts::BASE_GENERAL) {
                 Ok(response) => response,
                 Err(e) => {
                     format!("Error communicating with Claude: {}", e)
@@ -39,7 +33,19 @@ pub fn get_response_for_input(input: &str, messages: &mut Vec<anthropic::types::
     }
 }
 
-async fn get_claude_response(messages: &mut Vec<anthropic::types::Message>) -> Result<String, Box<dyn std::error::Error>> {
+fn call_anthropic(tokenized_input: Vec<&str>, messages: &mut Vec<anthropic::types::Message>, sys_prompt: &str) -> Result<String, Box<dyn std::error::Error>> {
+    messages.push(anthropic::types::Message {
+        role: anthropic::types::Role::User,
+        content: vec![anthropic::types::ContentBlock::Text {
+            text: tokenized_input[1..].join(" ")
+        }]
+    });
+    tokio::runtime::Runtime::new()
+        .unwrap()
+        .block_on(get_claude_response(messages, sys_prompt))
+}
+
+async fn get_claude_response(messages: &mut Vec<anthropic::types::Message>, sys_prompt: &str) -> Result<String, Box<dyn std::error::Error>> {
     let api_key = std::env::var("API_KEY").expect("API_KEY must be set in .env file");
 
     let client = anthropic::client::ClientBuilder::default()
@@ -50,6 +56,7 @@ async fn get_claude_response(messages: &mut Vec<anthropic::types::Message>) -> R
         .model("claude-sonnet-4-5-20250929".to_string())
         .max_tokens(1024usize)
         .messages(&messages[..])
+        .system(sys_prompt)
         .build()?;
 
     let response = client.messages(request).await?;
