@@ -1,6 +1,6 @@
 mod common;
 
-use common::message;
+use common::message_processing;
 use std::io::Write;
 use std::env;
 
@@ -16,7 +16,7 @@ fn main() {
         }
     }
 
-    message::print_initial_message();
+    message_processing::print_initial_message();
 
     let mut messages = Vec::<anthropic::types::Message>::new();
 
@@ -31,7 +31,7 @@ fn main() {
                     println!("Exiting rustbot. Goodbye!");
                     break;
                 } else {
-                    let response = message::get_response_for_input(&input, &mut messages);
+                    let response = message_processing::get_response_for_input(&input, &mut messages);
                     println!("{}", response);
                 }
             }
