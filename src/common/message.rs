@@ -1,6 +1,5 @@
 use anthropic;
 use tokio;
-use dotenv::dotenv; 
 
 static mut CUMULATIVE_TOKENS: usize = 0;
 
@@ -41,8 +40,6 @@ pub fn get_response_for_input(input: &str, messages: &mut Vec<anthropic::types::
 }
 
 async fn get_claude_response(messages: &mut Vec<anthropic::types::Message>) -> Result<String, Box<dyn std::error::Error>> {
-    dotenv().ok();
-    
     let api_key = std::env::var("API_KEY").expect("API_KEY must be set in .env file");
 
     let client = anthropic::client::ClientBuilder::default()

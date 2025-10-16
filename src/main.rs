@@ -2,10 +2,13 @@ mod common;
 
 use common::message;
 use std::io::Write;
+use dotenv::dotenv;
 
 use anthropic;
 
 fn main() {
+    dotenv().ok();
+    
     message::print_initial_message();
 
     let mut messages = Vec::<anthropic::types::Message>::new();
