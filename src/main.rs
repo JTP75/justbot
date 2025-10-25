@@ -30,8 +30,11 @@ fn main() {
                 if input.trim() == "exit" {
                     println!("Exiting rustbot. Goodbye!");
                     break;
+                } else if input.trim() == "wexit" {
+                    println!("Exiting rustbot and saving. Goodbye!");
+                    break;
                 } else {
-                    let response = message_processing::get_response_for_input(&input, &mut messages);
+                    let response = message_processing::route_command(&input, &mut messages);
                     println!("{}", response);
                 }
             }
