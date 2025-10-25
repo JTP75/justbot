@@ -1,11 +1,13 @@
 mod common;
 
-use anthropic::types::Message;
-use common::message_processing;
-use std::io::Write;
 use std::env;
 
+use anthropic::types::Message;
 use dotenvy;
+use rustyline::error::ReadlineError;
+use rustyline::DefaultEditor;
+
+use common::message_processing;
 
 fn main() {
 
@@ -20,29 +22,35 @@ fn main() {
 
     let mut messages = Vec::<Message>::new();
 
-    while {
-        print!("> ");
-        std::io::stdout().flush().unwrap();
-        true
-    } {
-        match std::io::stdin().lines().next() {
-            Some(Ok(input)) => {
-                if input.trim() == "exit" {
+    let mut rl = match DefaultEditor::new() {
+        Ok(rl) => rl,
+        Err(e) => {
+            eprintln!("error: {e}");
+            return;
+        }
+    };
+
+    loop {
+        let readline = rl.readline("> ");
+        match readline {
+            Ok(line) => {
+                if line.trim() == "exit" {
                     println!("Exiting rustbot. Goodbye!");
                     break;
-                } else if input.trim() == "wexit" {
+                } else if line.trim() == "wexit" {
                     println!("Exiting rustbot and saving. Goodbye!");
                     break;
                 } else {
-                    let response = message_processing::route_command(&input, &mut messages);
+                    let response = message_processing::route_command(&line, &mut messages);
                     println!("{}", response);
                 }
             }
-            Some(Err(err)) => {
-                eprintln!("error: {}", err);
+            Err(ReadlineError::Interrupted) => break,
+            Err(ReadlineError::Eof) => break,
+            Err(err) => {
+                eprintln!("Error: {:?}", err);
                 break;
             }
-            None => break
         }
     }
 }
