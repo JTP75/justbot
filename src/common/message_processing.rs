@@ -21,7 +21,7 @@ pub fn route_command(input: &str, messages: &mut Vec<Message>) -> String {
     let tokenized: Vec<&str> =  input.split_whitespace().collect();
     match tokenized[0].to_lowercase().as_str() {
         "hello" => "Hi there!".to_string(),
-        "help" => "Available commands: hello, help, general <message>, exit".to_string(),
+        "help" => "Available commands: hello, help, general <message>, save [<filename>], load <filename>, list, exit".to_string(),
         "general" => {
             if tokenized.len() < 2 {
                 return "Usage: general <message>".to_string();
