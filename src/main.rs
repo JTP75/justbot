@@ -1,10 +1,10 @@
 mod common;
 
+use anthropic::types::Message;
 use common::message_processing;
 use std::io::Write;
 use std::env;
 
-use anthropic;
 use dotenvy;
 
 fn main() {
@@ -18,7 +18,7 @@ fn main() {
 
     message_processing::print_initial_message();
 
-    let mut messages = Vec::<anthropic::types::Message>::new();
+    let mut messages = Vec::<Message>::new();
 
     while {
         print!("> ");

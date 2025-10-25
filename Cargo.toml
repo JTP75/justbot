@@ -8,4 +8,5 @@ anthropic = "0.0.8"
 directories = "6.0.0"
 dotenvy = "0.15.7"
 log = "0.4.28"
+serde_json = "1.0.145"
 tokio = { version = "1.47.1", features = ["full"] }

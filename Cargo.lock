@@ -1001,6 +1001,7 @@ dependencies = [
  "directories",
  "dotenvy",
  "log",
+ "serde_json",
  "tokio",
 ]
 
