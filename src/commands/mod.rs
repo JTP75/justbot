@@ -49,4 +49,7 @@ pub mod motd;
 pub mod save;
 pub mod load;
 pub mod list;
+
+// terminating
 pub mod exit;
+pub mod wexit;
