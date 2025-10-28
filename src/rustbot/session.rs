@@ -1,10 +1,10 @@
-use std::{ffi::OsStr, fs, path::PathBuf};
+use std::{fs, path::PathBuf};
 
 use anthropic::types::Message;
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 
-use crate::rustbot::bot::{DEFAULT_NAME, RustBot};
+use crate::rustbot::bot::RustBot;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Session {

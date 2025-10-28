@@ -1,4 +1,4 @@
-use anthropic::types::{ContentBlock, Message, MessageBuilder, Role};
+use anthropic::types::{ContentBlock, MessageBuilder, Role};
 
 use crate::rustbot::bot::RustBot;
 

@@ -2,7 +2,6 @@ use anthropic::types::Message;
 
 use crate::commands::{Command, REGISTRY};
 use crate::connection::anthropic_client::AnthropicClient;
-use crate::rustbot::session::Session;
 
 pub const DEFAULT_NAME: &str = "\x1b[0;33mrustbot\x1b[0m";
 
@@ -14,9 +13,9 @@ pub struct RustBot {
     // state data
     topic: String,
     messages: Vec<Message>,
-    input_tokens: Vec<usize>,
-    output_tokens: Vec<usize>,
-    total_tokens: Vec<usize>,
+    _input_tokens: Vec<usize>,
+    _output_tokens: Vec<usize>,
+    _total_tokens: Vec<usize>,
 }
 
 impl RustBot {
@@ -29,9 +28,9 @@ impl RustBot {
             client: AnthropicClient::new().unwrap(),
             topic: "".into(),
             messages: vec![],
-            input_tokens: vec![],
-            output_tokens: vec![],
-            total_tokens: vec![],
+            _input_tokens: vec![],
+            _output_tokens: vec![],
+            _total_tokens: vec![],
         }
     }
 
