@@ -98,8 +98,10 @@ impl SessionManager {
     }
 
     fn load_session_from_json(&mut self, path: PathBuf, bot: &mut RustBot) -> Result<(),Box<dyn std::error::Error>> {
-        let json = fs::read_to_string(path)?;
+        let json = fs::read_to_string(&path)?;
         let session: Session = serde_json::from_str(&json)?;
+
+        self.current = path;
 
         bot.set_topic(session.topic);
         bot.set_messages(session.messages);
@@ -116,5 +118,15 @@ impl SessionManager {
             })
             .collect::<Vec<String>>();
         Ok(saved_sessions)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_save_existing() {
+        let _sm = SessionManager::new();
     }
 }
