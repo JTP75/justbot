@@ -6,6 +6,7 @@ pub struct LoadCommand;
 
 impl Command for LoadCommand {
     fn name(&self) -> &str { "load" }
+    fn aliases(&self) -> Vec<&str> { vec![] }
     fn desc(&self) -> &str { "Load a session file over the current session" }
     fn help(&self) -> &str { "Usage: load <filename>\nFilename must be specified" }
     fn exec(&self, sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {

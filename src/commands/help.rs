@@ -6,6 +6,7 @@ pub struct HelpCommand;
 
 impl Command for HelpCommand {
     fn name(&self) -> &str { "help" }
+    fn aliases(&self) -> Vec<&str> { vec![] }
     fn desc(&self) -> &str { "Get help on command usage" }
     fn help(&self) -> &str { "Usage: help [<command>]\nShows help and desc for specified command. If no command is specified, lists available commands." }
     fn exec(&self, _sm: &mut SessionManager, _bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {

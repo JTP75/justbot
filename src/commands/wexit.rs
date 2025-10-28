@@ -6,6 +6,7 @@ pub struct WExitCommand;
 
 impl Command for WExitCommand {
     fn name(&self) -> &str { "wexit" }
+    fn aliases(&self) -> Vec<&str> { vec!["wq"] }
     fn desc(&self) -> &str { "Save the current conversation and print a friendly farewell" }
     fn help(&self) -> &str { "Usage: wexit\nTakes no arguments" }
     fn exec(&self, sm: &mut SessionManager, bot: &mut RustBot, _args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {

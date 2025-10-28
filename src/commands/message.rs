@@ -8,6 +8,7 @@ pub struct MessageCommand;
 
 impl Command for MessageCommand {
     fn name(&self) -> &str { "message" }
+    fn aliases(&self) -> Vec<&str> { vec!["msg"] }
     fn desc(&self) -> &str { "Send a message to claude using anthropic api" }
     fn help(&self) -> &str { "Usage: message <message>\nMessage does not need to be in quotation marks" }
     fn exec(&self, _sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {

@@ -6,6 +6,7 @@ pub struct ListCommand;
 
 impl Command for ListCommand {
     fn name(&self) -> &str { "list" }
+    fn aliases(&self) -> Vec<&str> { vec![] }
     fn desc(&self) -> &str { "List all saved session files in the rustbot data directory" }
     fn help(&self) -> &str { "Usage: list\nTakes no arguments" }
     fn exec(&self, sm: &mut SessionManager, _bot: &mut RustBot, _args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {

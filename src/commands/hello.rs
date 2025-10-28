@@ -6,6 +6,7 @@ pub struct HelloCommand;
 
 impl Command for HelloCommand {
     fn name(&self) -> &str { "hello" }
+    fn aliases(&self) -> Vec<&str> { vec![] }
     fn desc(&self) -> &str { "Print a friendly greeting" }
     fn help(&self) -> &str { "Usage: hello\nTakes no arguments" }
     fn exec(&self, _sm: &mut SessionManager, bot: &mut RustBot, _args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {

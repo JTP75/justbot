@@ -6,6 +6,7 @@ pub struct SaveCommand;
 
 impl Command for SaveCommand {
     fn name(&self) -> &str { "save" }
+    fn aliases(&self) -> Vec<&str> { vec!["w"] }
     fn desc(&self) -> &str { "Save the current claude messages to a file" }
     fn help(&self) -> &str { "Usage: save [<filename>]\nFilename is optional: \n\t- If this a loaded session, the previous save will be overwritten.\n\t- If this is not a loaded session, rustbot will generate a filename." }
     fn exec(&self, sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {

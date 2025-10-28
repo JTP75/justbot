@@ -5,6 +5,7 @@ use crate::rustbot::{bot::RustBot, session::SessionManager};
 
 pub trait Command {
     fn name(&self) -> &str;
+    fn aliases(&self) -> Vec<&str>;
     fn desc(&self) -> &str;
     fn help(&self) -> &str;
     fn exec(&self, sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>>;
@@ -22,7 +23,10 @@ impl CommandRegistry {
     }
     
     pub fn register(&mut self, name: String, factory: CommandFactory) {
-        self.commands.insert(name, factory);
+        for alias in factory().aliases() {
+            self.commands.insert(alias.into(), factory.clone());
+        }
+        self.commands.insert(name.clone(), factory);
     }
 
     pub fn get(&self, name: &str) -> Option<Box<dyn Command>> {
