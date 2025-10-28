@@ -7,7 +7,6 @@ pub struct AnthropicClient {
     client: Client,
     model: String,
     max_tokens: usize,
-    temperature: f64,
 }
 
 /**
@@ -35,15 +34,14 @@ impl AnthropicClient {
                 .build()?,
             model: "claude-sonnet-4-5-20250929".into(),
             max_tokens: 4096,
-            temperature: 0.5,
         })
     }
 
-    pub fn send_message(&self, messages: &Vec<Message>, sys_prompt: &str) -> Result<MessagesResponse,Box<dyn std::error::Error>> {
+    pub fn send_message(&self, messages: &Vec<Message>, sys_prompt: &str, randomness: f64) -> Result<MessagesResponse,Box<dyn std::error::Error>> {
         let request = MessagesRequestBuilder::default()
             .model(&self.model)
             .max_tokens(self.max_tokens)
-            .temperature(self.temperature)
+            .temperature(randomness)
             .messages(&messages[..])
             .system(sys_prompt)
             .build()?;

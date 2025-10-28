@@ -30,7 +30,7 @@ impl Command for MessageCommand {
 
         let sys_prompt = format!("Your name is {}. Your name officially has no meaning in particular. You are being called for general use. Your response should always be written in english.", bot.get_name());
         let client = bot.get_anthropic_client();
-        let response = client.send_message(&bot.get_messages(), &sys_prompt)?;
+        let response = client.send_message(&bot.get_messages(), &sys_prompt, 0.75)?;
 
         let agent_message = MessageBuilder::default()
             .role(Role::Assistant)
