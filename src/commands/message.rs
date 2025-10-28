@@ -10,7 +10,7 @@ impl Command for MessageCommand {
     fn name(&self) -> &str { "message" }
     fn desc(&self) -> &str { "Send a message to claude using anthropic api" }
     fn help(&self) -> &str { "Usage: message <message>\nMessage does not need to be in quotation marks" }
-    fn exec(&self, _sm: &SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, _sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let user_message = MessageBuilder::default()
             .role(Role::User)
             .content(vec![ContentBlock::Text {

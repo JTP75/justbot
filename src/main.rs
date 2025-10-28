@@ -7,7 +7,7 @@ use rustyline::{DefaultEditor,error::ReadlineError};
 
 use crate::rustbot::{bot::{DEFAULT_NAME, RustBot}, session::SessionManager};
 
-fn handle_bot_command(sm: &SessionManager, bot: &mut RustBot, input: &str) -> String {
+fn handle_bot_command(sm: &mut SessionManager, bot: &mut RustBot, input: &str) -> String {
     match bot.handle_command(sm, input) {
         Ok(Some(response)) => format!("\x1b[1;32m>>\x1b[0m {}", response),
         Ok(None) => "\x1b[1;32m>>\x1b[0m Command executed successfully.".into(),
@@ -16,8 +16,8 @@ fn handle_bot_command(sm: &SessionManager, bot: &mut RustBot, input: &str) -> St
 }
 
 // todo unify this with other commands please...
-fn handle_session_command(sm: &mut SessionManager, bot: &mut RustBot, tokens: Vec<&str>) -> String {
-    sm.handle_command(tokens, bot)
+fn _handle_session_command(sm: &mut SessionManager, bot: &mut RustBot, tokens: Vec<&str>) -> String {
+    sm._handle_command(tokens, bot)
 }
 
 fn main() {
@@ -49,17 +49,13 @@ fn main() {
                 let tokens: Vec<_> = line.split_whitespace().collect();
                 let first = match tokens.len() { 0 => "", _ => tokens[0] };
                 match first {
-                    "exit" | "wexit" | "q" | "wq" => {
-                        let response = handle_session_command(&mut sm, &mut bot, tokens);
+                    "exit" | "wexit" => {
+                        let response = handle_bot_command(&mut sm, &mut bot, &line);
                         println!("{}", response);
                         break;
                     },
-                    "save" | "w" | "list" | "load" => {
-                        let response = handle_session_command(&mut sm, &mut bot, tokens);
-                        println!("{}", response);
-                    },
                     _ => {
-                        let response = handle_bot_command(&sm, &mut bot, &line);
+                        let response = handle_bot_command(&mut sm, &mut bot, &line);
                         println!("{}", response);
                     },
                 }

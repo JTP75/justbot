@@ -54,7 +54,7 @@ impl RustBot {
         }
     }
 
-    pub fn handle_command(&mut self, sm: &SessionManager, input: &str) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    pub fn handle_command(&mut self, sm: &mut SessionManager, input: &str) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let (command,args) = self.parse_command(input)?;
         command.exec(sm, self, &args)
     }

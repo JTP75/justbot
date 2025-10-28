@@ -7,7 +7,7 @@ pub trait Command {
     fn name(&self) -> &str;
     fn desc(&self) -> &str;
     fn help(&self) -> &str;
-    fn exec(&self, sm: &SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>>;
+    fn exec(&self, sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>>;
 }
 
 pub type CommandFactory = fn() -> Box<dyn Command>;
@@ -38,7 +38,15 @@ pub static REGISTRY: Lazy<std::sync::Mutex<CommandRegistry>> =
     Lazy::new(|| std::sync::Mutex::new(CommandRegistry::new()));
 
 // register commands
+
+// chatbot
 pub mod hello;
 pub mod help;
 pub mod message;
 pub mod motd;
+
+// session
+pub mod save;
+pub mod load;
+pub mod list;
+pub mod exit;
