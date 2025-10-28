@@ -22,6 +22,9 @@ pub struct SessionManager {
 }
 
 impl SessionManager {
+
+    // public
+
     pub fn new() -> Self {
         let project_dirs = ProjectDirs::from("com", "Justin Inc.", "rustbot").unwrap();
         SessionManager { 
@@ -32,61 +35,6 @@ impl SessionManager {
         }
     }
 
-    pub fn _handle_command(&mut self, tokens: Vec<&str>, bot: &mut RustBot) -> String {
-        let ans = match tokens[0] {
-            "exit" | "q" => {
-                format!("Exiting. Goodbye!")
-            },
-            "wexit" | "wq" | "qw" => {
-                let path = if tokens.len()>1 {
-                    self.save_dir.join(tokens[1..].join("_"))
-                } else if !self.current.as_os_str().is_empty() {
-                    self.current.clone()
-                } else {
-                    let topic = self.generate_topic(bot).unwrap_or(format!("unnamed.json"));
-                    let filename = self.get_filename_from_topic(topic);
-                    self.save_dir.join(filename)
-                };
-                match self.save_session_as_json(path.clone(), bot) {
-                    Ok(_) => format!("Saved session to\n{}.\nGoodbye!", path.clone().as_os_str().display()),
-                    Err(e) => format!("Failed to save session to\n{}.: {}\nGoodbye!", path.as_os_str().display(), e),
-                }
-            },
-            "list" => match self.list_sessions() {
-                Ok(sessions) => format!("Saves in {}\n\t{}", self.save_dir.display(), sessions[..].join("\n\t")),
-                Err(e) => format!("Failed to load saved sessions: {}", e),
-            },
-            "save" | "w" => {
-                let path = if tokens.len()>1 {
-                    self.save_dir.join(tokens[1..].join("_"))
-                } else if !self.current.as_os_str().is_empty() {
-                    self.current.clone()
-                } else {
-                    let topic = self.generate_topic(bot).unwrap_or(format!("unnamed.json"));
-                    let filename = self.get_filename_from_topic(topic);
-                    self.save_dir.join(filename)
-                };
-                match self.save_session_as_json(path.clone(), bot) {
-                    Ok(_) => format!("Saved session to\n{}", path.clone().as_os_str().display()),
-                    Err(e) => format!("Failed to save session to\n{}: {}", path.as_os_str().display(), e),
-                }
-            },
-            "load" => {
-                if tokens.len()>1 {
-                    let path = self.save_dir.join(tokens[1..].join("_"));
-                    match self.load_session_from_json(path.clone(), bot) {
-                        Ok(_) => format!("Loaded session from\n{}", path.clone().as_os_str().display()),
-                        Err(e) => format!("Failed to load session from\n{}: {}", path.as_os_str().display(), e),
-                    }
-                } else {
-                    format!("Must specify session file to load")
-                }
-            },
-            _ => format!("Control shouldn't reach here."),
-        };
-        format!("\x1b[1;35m>>\x1b[0m {}", ans)
-    }
-
     pub fn save_session(&mut self, bot: &RustBot, filename_arg: Option<String>) -> Result<(),Box<dyn std::error::Error>> {
         let path = match filename_arg {
             Some(filename) => self.save_dir.join(filename),
@@ -94,7 +42,10 @@ impl SessionManager {
                 if !self.current.as_os_str().is_empty() {
                     self.current.clone()
                 } else {
-                    let topic = self.generate_topic(bot).unwrap_or(format!("unnamed.json"));
+                    let topic = self.generate_topic(bot).unwrap_or({
+                        println!("Failed to generate topic. using default");
+                        format!("unnamed.json")
+                    });
                     let filename = self.get_filename_from_topic(topic);
                     self.save_dir.join(filename)
                 }
@@ -118,6 +69,8 @@ impl SessionManager {
             .collect::<Vec<String>>();
         Ok(saved_sessions)
     }
+
+    // private
 
     fn get_filename_from_topic(&self, topic: String) -> String {
         let file_stem = topic.trim().replace(" ","_").to_ascii_lowercase();
