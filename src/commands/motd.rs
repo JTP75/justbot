@@ -1,0 +1,54 @@
+use anthropic::types::{ContentBlock, MessageBuilder, Role};
+use chrono::Local;
+
+use crate::rustbot::bot::RustBot;
+
+use super::{Command, REGISTRY};
+
+pub struct MotdCommand;
+
+impl Command for MotdCommand {
+    fn name(&self) -> &str { "motd" }
+    fn desc(&self) -> &str { "Display today's motd (Message of the day)" }
+    fn help(&self) -> &str { "Usage: motd [<options>]\n--reroll\t- Generate a new motd" }
+    fn exec(&self, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
+        
+        let todays_date = Local::now().date_naive();
+        let motd = bot.get_motd();
+
+        let reroll = args.first().is_some() && args.first().unwrap().eq("--reroll");
+
+        if motd.0==todays_date && motd.1.is_some() && !reroll {
+            Ok(motd.1)
+        } else {
+
+            let mut convo_copy = bot.get_messages();
+            let user_message = MessageBuilder::default()
+                .role(Role::User)
+                .content(vec![ContentBlock::Text {
+                    text: "Write a creative, one-sentence MOTD. It can be related to news/events, or just a friendly message. Respond with only the message.".into()
+                }])
+                .build()?;
+            convo_copy.push(user_message);
+
+            let response = bot.get_anthropic_client().send_message(&convo_copy, "", 1.0)?;
+            let response_text: String = match response.content.first() {
+                Some(ContentBlock::Text { text }) => text.into(),
+                Some(ContentBlock::Image { source: _, media_type: _, data: _ }) => "Unexpected content block type".into(),
+                None => "Null response from agent".into()
+            };
+
+            let new_motd = (todays_date, Some(response_text));
+            bot.set_motd(new_motd.clone());
+            Ok(new_motd.1)
+        }
+    }
+}
+
+#[ctor::ctor]
+fn register() {
+    REGISTRY.lock().unwrap().register(
+        "motd".into(), 
+        || Box::new(MotdCommand),
+    );
+}

@@ -14,15 +14,16 @@ pub struct Session {
 
 pub struct SessionManager {
     pub save_dir: PathBuf,
+    pub _config_dir: PathBuf,
     pub current: PathBuf,
 }
 
 impl SessionManager {
     pub fn new() -> Self {
+        let project_dirs = ProjectDirs::from("com", "Justin Inc.", "rustbot").unwrap();
         SessionManager { 
-            save_dir: ProjectDirs::from("com", "Justin Inc.", "rustbot").unwrap()
-                .data_dir()
-                .join(""),
+            save_dir: project_dirs.data_dir().join(""),
+            _config_dir: project_dirs.config_dir().join(""),
             current: PathBuf::new()
         }
     }

@@ -7,18 +7,9 @@ use super::{Command, REGISTRY};
 pub struct MessageCommand;
 
 impl Command for MessageCommand {
-    fn name(&self) -> &str {
-        "message"
-    }
-
-    fn desc(&self) -> &str {
-        "Send a message to claude using anthropic api"
-    }
-
-    fn help(&self) -> &str {
-        "Usage: message <message>\nMessage does not need to be in quotation marks"
-    }
-
+    fn name(&self) -> &str { "message" }
+    fn desc(&self) -> &str { "Send a message to claude using anthropic api" }
+    fn help(&self) -> &str { "Usage: message <message>\nMessage does not need to be in quotation marks" }
     fn exec(&self, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let user_message = MessageBuilder::default()
             .role(Role::User)
@@ -38,8 +29,8 @@ impl Command for MessageCommand {
             .build()?;
         bot.push_message(agent_message.clone());
 
-        let response_text = match agent_message.content.first() {
-            Some(ContentBlock::Text { text }) => text.to_string(),
+        let response_text: String = match agent_message.content.first() {
+            Some(ContentBlock::Text { text }) => text.into(),
             Some(ContentBlock::Image { source: _, media_type: _, data: _ }) => "Unexpected content block type".into(),
             None => "Null response from agent".into()
         };
