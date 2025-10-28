@@ -1,7 +1,7 @@
 use anthropic::types::{ContentBlock, MessageBuilder, Role};
 use chrono::Local;
 
-use crate::rustbot::bot::RustBot;
+use crate::rustbot::{bot::RustBot, session::SessionManager};
 
 use super::{Command, REGISTRY};
 
@@ -11,7 +11,7 @@ impl Command for MotdCommand {
     fn name(&self) -> &str { "motd" }
     fn desc(&self) -> &str { "Display today's motd (Message of the day)" }
     fn help(&self) -> &str { "Usage: motd [<options>]\n--reroll\t- Generate a new motd" }
-    fn exec(&self, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, sm: &SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
         
         let todays_date = Local::now().date_naive();
         let motd = bot.get_motd();
@@ -26,7 +26,10 @@ impl Command for MotdCommand {
             let user_message = MessageBuilder::default()
                 .role(Role::User)
                 .content(vec![ContentBlock::Text {
-                    text: "Write a creative, one-sentence MOTD. It can be related to news/events, or just a friendly message. Respond with only the message.".into()
+                    text: format!(
+                        "Today is {}. Write a creative, one-sentence MOTD. It can be related to news/events, or just a friendly message. Respond with only the message.", 
+                        todays_date.format("%A, %m/%d/%Y")
+                    )
                 }])
                 .build()?;
             convo_copy.push(user_message);
@@ -40,6 +43,8 @@ impl Command for MotdCommand {
 
             let new_motd = (todays_date, Some(response_text));
             bot.set_motd(new_motd.clone());
+            sm.save_motd(bot)?;
+
             Ok(new_motd.1)
         }
     }

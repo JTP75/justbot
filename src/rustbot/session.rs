@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::rustbot::bot::RustBot;
 
+pub const MOTD_FILENAME: &str = "motd.json";
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Session {
     pub topic: String,
@@ -13,6 +15,7 @@ pub struct Session {
 }
 
 pub struct SessionManager {
+    pub data_dir: PathBuf,
     pub save_dir: PathBuf,
     pub _config_dir: PathBuf,
     pub current: PathBuf,
@@ -22,7 +25,8 @@ impl SessionManager {
     pub fn new() -> Self {
         let project_dirs = ProjectDirs::from("com", "Justin Inc.", "rustbot").unwrap();
         SessionManager { 
-            save_dir: project_dirs.data_dir().join(""),
+            data_dir: project_dirs.data_dir().join(""),
+            save_dir: project_dirs.data_dir().join("sessions/"),
             _config_dir: project_dirs.config_dir().join(""),
             current: PathBuf::new()
         }
@@ -108,6 +112,19 @@ impl SessionManager {
         }
     }
 
+    pub fn save_motd(&self, bot: &RustBot) -> Result<(),Box<dyn std::error::Error>> {
+        if !self.data_dir.exists() { fs::create_dir_all(&self.data_dir)?; }
+
+        let json = serde_json::to_string_pretty(&bot.get_motd())?;
+        Ok(fs::write(&self.data_dir.join(MOTD_FILENAME), json)?)
+    }
+
+    pub fn load_motd(&self, bot: &mut RustBot) -> Result<(),Box<dyn std::error::Error>> {
+        let json = fs::read_to_string(&self.data_dir.join(MOTD_FILENAME))?;
+        let motd: (chrono::NaiveDate, Option<String>) = serde_json::from_str(&json)?;
+        Ok(bot.set_motd(motd))
+    }
+
     fn save_session_as_json(&mut self, path: PathBuf, bot: &RustBot) -> Result<(),Box<dyn std::error::Error>> {        
         if !self.save_dir.exists() { fs::create_dir_all(&self.save_dir)?; }
 
@@ -133,6 +150,8 @@ impl SessionManager {
 
         bot.set_topic(session.topic);
         bot.set_messages(session.messages);
+
+        self.load_motd(bot)?;
 
         Ok(())
     }

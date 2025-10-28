@@ -3,6 +3,7 @@ use chrono::{self, Local};
 
 use crate::commands::{Command, REGISTRY};
 use crate::connection::anthropic_client::AnthropicClient;
+use crate::rustbot::session::SessionManager;
 
 pub const DEFAULT_NAME: &str = "\x1b[0;33mrustbot\x1b[0m";
 
@@ -53,9 +54,9 @@ impl RustBot {
         }
     }
 
-    pub fn handle_command(&mut self, input: &str) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    pub fn handle_command(&mut self, sm: &SessionManager, input: &str) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let (command,args) = self.parse_command(input)?;
-        command.exec(self, &args)
+        command.exec(sm, self, &args)
     }
 
     pub fn get_name(&self) -> String { self.name.clone() }

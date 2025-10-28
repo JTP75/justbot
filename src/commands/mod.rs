@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 use once_cell::sync::Lazy;
 
-use crate::rustbot::bot::RustBot;
+use crate::rustbot::{bot::RustBot, session::SessionManager};
 
 pub trait Command {
     fn name(&self) -> &str;
     fn desc(&self) -> &str;
     fn help(&self) -> &str;
-    fn exec(&self, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>>;
+    fn exec(&self, sm: &SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>>;
 }
 
 pub type CommandFactory = fn() -> Box<dyn Command>;
