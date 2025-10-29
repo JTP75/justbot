@@ -1,17 +1,15 @@
 #![allow(unused)]
 
-use std::collections::HashMap;
-
 use qdrant_client::{
     Payload, Qdrant, qdrant::{
-        CreateCollection, Distance, PointStruct, ScoredPoint, SearchPoints, UpsertPointsBuilder, Value, VectorParams, VectorsConfig, vectors_config
+        CreateCollection, Distance, PointStruct, ScoredPoint, SearchPoints, UpsertPointsBuilder, VectorParams, VectorsConfig, vectors_config
     }
 };
 use uuid::Uuid;
 
 pub struct QdrantClient {
     client: Qdrant,
-    url: String,
+    _url: String,
 }
 
 impl QdrantClient {
@@ -24,7 +22,7 @@ impl QdrantClient {
         let url = format!("http://{}:{}/collections", host, port);
         Ok(Self {
             client: Qdrant::from_url(&url).build()?,
-            url: url,
+            _url: url,
         })
     }
 
@@ -159,7 +157,7 @@ mod test {
 
         let mut rng = rand::rng();
 
-        for i in 0..500 {
+        for _ in 0..500 {
             let vec: Vec<f32> = (0..DIM).map(|_| rng.random_range(-1.0..1.0)).collect();
             let result = client.insert_to_collection(collection_name, 
                 vec, "project/README.md", "# README hello").await;

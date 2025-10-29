@@ -13,11 +13,9 @@ pub fn get_config<T>(filename: &str, key: &str) -> Result<T,Box<dyn std::error::
     let map: HashMap<String, serde_json::Value> = serde_json::from_str(&json)?;
     match map.get(key) {
         Some(val) => {
-            // Try to get as string first, otherwise convert to string
             let string_val = if let Some(s) = val.as_str() {
                 s.to_string()
             } else {
-                // For numbers, booleans, etc., convert without quotes
                 match val {
                     serde_json::Value::Number(n) => n.to_string(),
                     serde_json::Value::Bool(b) => b.to_string(),
