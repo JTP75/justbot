@@ -19,7 +19,7 @@ impl AnthropicClient {
     // public
 
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        if let Ok(exe_path) = std::env::current_exe() {
+        if let Ok(exe_path) = std::env::current_exe() { // redo this using the config dir
             if let Some(exe_dir) = exe_path.parent() {
                 let env_path = exe_dir.join(".env");
                 dotenvy::from_path(env_path).ok();
