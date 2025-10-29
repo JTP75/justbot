@@ -3,6 +3,8 @@ use chrono::{self, Local};
 
 use crate::commands::{Command, REGISTRY};
 use crate::connection::anthropic_client::AnthropicClient;
+use crate::connection::qdrant_client::QdrantClient;
+use crate::connection::voyage_client::VoyageClient;
 use crate::rustbot::session::SessionManager;
 
 #[derive(Debug)]
@@ -10,7 +12,10 @@ pub struct RustBot {
 
     // immut fields
     name: String,
-    client: AnthropicClient,
+
+    chat_client: AnthropicClient,
+    vdb_client: QdrantClient,
+    embedding_client: VoyageClient,
 
     // state
     topic: String,
@@ -39,7 +44,10 @@ impl RustBot {
     pub fn new(name: impl Into<String>) -> Self {
         Self { 
             name: name.into(), 
-            client: AnthropicClient::new().unwrap(),
+
+            chat_client: AnthropicClient::new().unwrap(),
+            vdb_client: QdrantClient::new().unwrap(),
+            embedding_client: VoyageClient::new().unwrap(),
             
             topic: "".into(),
             messages: vec![],
@@ -69,7 +77,7 @@ impl RustBot {
 
     pub fn push_message(&mut self, message: Message) -> () { self.messages.push(message) }
 
-    pub fn get_anthropic_client(&self) -> &AnthropicClient { &self.client }
+    pub fn get_anthropic_client(&self) -> &AnthropicClient { &self.chat_client }
 
     pub fn get_motd(&self) -> (chrono::NaiveDate, Option<String>) { self.motd.clone() }
     

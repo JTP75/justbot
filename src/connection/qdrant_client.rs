@@ -12,6 +12,15 @@ pub struct QdrantClient {
     _url: String,
 }
 
+impl std::fmt::Debug for QdrantClient {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("QdrantClient")
+            .field("client", &"<Qdrant client>")
+            .field("_url", &self._url)
+            .finish()
+    }
+}
+
 impl QdrantClient {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         let host: String = crate::common::config

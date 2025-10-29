@@ -24,7 +24,7 @@ impl AnthropicClient {
         let env_path = project_dirs.config_dir().join(".env");
         dotenvy::from_path(env_path).ok();
 
-        let api_key = std::env::var("API_KEY")?;
+        let api_key = std::env::var("ANTHROPIC_API_KEY")?;
         let model: String = crate::common::config
             ::get_config("anthropic_config.json", "default_model")?;
         let max_tokens: usize = crate::common::config
