@@ -9,10 +9,6 @@ use qdrant_client::{
 };
 use uuid::Uuid;
 
-const QDRANT_HOST: &str = "127.0.0.1";
-const _QDRANT_REST_PORT: u16 = 6333;
-const QDRANT_GRPC_PORT: u16 = 6334;
-
 pub struct QdrantClient {
     client: Qdrant,
     url: String,
@@ -20,20 +16,26 @@ pub struct QdrantClient {
 
 impl QdrantClient {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let url = format!("http://{}:{}/collections", QDRANT_HOST, QDRANT_GRPC_PORT);
+        let host: String = crate::common::config
+            ::get_config("vectordb_config.json", "host")?;
+        let port: u16 = crate::common::config
+            ::get_config("vectordb_config.json", "grpc_port")?;
+
+        let url = format!("http://{}:{}/collections", host, port);
         Ok(Self {
             client: Qdrant::from_url(&url).build()?,
             url: url,
         })
     }
 
-    pub async fn add_collection(&self, collection_name: &str, size: usize, distance: Distance) 
+    pub async fn add_collection(&self, collection_name: &str) 
     -> Result<(), Box<dyn std::error::Error>> {
         let req = CreateCollection {
             collection_name: collection_name.into(),
             vectors_config: Some(VectorsConfig { 
                 config: Some(vectors_config::Config::Params(VectorParams {
-                    size: 1536,
+                    size: crate::common::config
+                        ::get_config::<u64>("vectordb_config", "dimensionality")?,
                     distance: Distance::Cosine.into(),
                     ..Default::default()
                 })), 
@@ -107,7 +109,7 @@ mod test {
         let collection_name = TEST_COLLECTION_NAME;
 
         // add collection
-        let result = client.add_collection(collection_name, DIM, Distance::Cosine).await;
+        let result = client.add_collection(collection_name).await;
         match result {
             Ok(_) => println!("Created collection: {}", collection_name),
             Err(e) => eprintln!("Collection already exists (or a different error) {:?}", e),

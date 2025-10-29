@@ -6,8 +6,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::rustbot::bot::RustBot;
 
-pub const MOTD_FILENAME: &str = "motd.json";
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Session {
     pub topic: String,
@@ -17,7 +15,6 @@ pub struct Session {
 pub struct SessionManager {
     pub data_dir: PathBuf,
     pub save_dir: PathBuf,
-    pub _config_dir: PathBuf,
     pub current: PathBuf,
 }
 
@@ -30,7 +27,6 @@ impl SessionManager {
         SessionManager { 
             data_dir: project_dirs.data_dir().join(""),
             save_dir: project_dirs.data_dir().join("sessions/"),
-            _config_dir: project_dirs.config_dir().join(""),
             current: PathBuf::new()
         }
     }
@@ -82,7 +78,8 @@ impl SessionManager {
         let topic_prompt = MessageBuilder::default()
             .role(Role::User)
             .content(vec![ContentBlock::Text { 
-                text: format!("What is the topic of this conversation, in five words or less? Write your response with as few words as possible. Response with these five or less words only.")
+                text: crate::common::config
+                    ::get_config("prompts.json","generate_topic")?
             }])
             .build()?;
         convo_copy.push(topic_prompt);
@@ -101,11 +98,15 @@ impl SessionManager {
         if !self.data_dir.exists() { fs::create_dir_all(&self.data_dir)?; }
 
         let json = serde_json::to_string_pretty(&bot.get_motd())?;
-        Ok(fs::write(&self.data_dir.join(MOTD_FILENAME), json)?)
+        let filename: String = crate::common::config
+            ::get_config("bot_config.json","motd_filename")?;
+        Ok(fs::write(&self.data_dir.join(filename), json)?)
     }
 
     pub fn load_motd(&self, bot: &mut RustBot) -> Result<(),Box<dyn std::error::Error>> {
-        let json = fs::read_to_string(&self.data_dir.join(MOTD_FILENAME))?;
+        let filename: String = crate::common::config
+            ::get_config("bot_config.json","motd_filename")?;
+        let json = fs::read_to_string(&self.data_dir.join(filename))?;
         let motd: (chrono::NaiveDate, Option<String>) = serde_json::from_str(&json)?;
         Ok(bot.set_motd(motd))
     }
@@ -147,7 +148,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_save_existing() {
-        let _sm = SessionManager::new();
+    fn test_show_directories() {
+        let sm = SessionManager::new();
+
+        println!("Data dir:   {}", sm.data_dir.display());
+        println!("Save dir:   {}", sm.save_dir.display());
     }
 }

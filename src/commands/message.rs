@@ -20,7 +20,8 @@ impl Command for MessageCommand {
             .build()?;
         bot.push_message(user_message);
 
-        let sys_prompt = format!("Your name is {}. Your name officially has no meaning in particular. You are being called for general use. Your response should always be written in english.", bot.get_name());
+        let sys_prompt: String = crate::common::config
+            ::get_config("bot_config.json", "base_sys_prompt")?;
         let client = bot.get_anthropic_client();
         let response = client.send_message(&bot.get_messages(), &sys_prompt, 0.75)?;
 

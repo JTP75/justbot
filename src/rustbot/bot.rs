@@ -5,8 +5,6 @@ use crate::commands::{Command, REGISTRY};
 use crate::connection::anthropic_client::AnthropicClient;
 use crate::rustbot::session::SessionManager;
 
-pub const DEFAULT_NAME: &str = "\x1b[0;33mrustbot\x1b[0m";
-
 #[derive(Debug)]
 pub struct RustBot {
 

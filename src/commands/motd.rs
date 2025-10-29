@@ -24,13 +24,12 @@ impl Command for MotdCommand {
         } else {
 
             let mut convo_copy = bot.get_messages();
+            let motd_prompt: String = crate::common::config
+                ::get_config("prompts", "motd")?;
             let user_message = MessageBuilder::default()
                 .role(Role::User)
                 .content(vec![ContentBlock::Text {
-                    text: format!(
-                        "Today is {}. Write a creative, one-sentence MOTD. It can be related to news/events, or just a friendly message. Respond with only the message.", 
-                        todays_date.format("%A, %m/%d/%Y")
-                    )
+                    text: format!("Today is {}. {}", todays_date.format("%A, %m/%d/%Y"), motd_prompt)
                 }])
                 .build()?;
             convo_copy.push(user_message);

@@ -1,4 +1,5 @@
 use anthropic::{client::{Client, ClientBuilder}, types::{Message, MessagesRequest, MessagesRequestBuilder, MessagesResponse}};
+use directories::ProjectDirs;
 use tokio;
 use dotenvy;
 
@@ -19,21 +20,22 @@ impl AnthropicClient {
     // public
 
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        if let Ok(exe_path) = std::env::current_exe() { // redo this using the config dir
-            if let Some(exe_dir) = exe_path.parent() {
-                let env_path = exe_dir.join(".env");
-                dotenvy::from_path(env_path).ok();
-            }
-        }
+        let project_dirs = ProjectDirs::from("com", "Justin Inc.", "rustbot").unwrap();
+        let env_path = project_dirs.config_dir().join(".env");
+        dotenvy::from_path(env_path).ok();
 
         let api_key = std::env::var("API_KEY")?;
+        let model: String = crate::common::config
+            ::get_config("anthropic_config.json", "default_model")?;
+        let max_tokens: usize = crate::common::config
+            ::get_config("anthropic_config.json", "max_tokens")?;
 
         Ok(Self {
             client: ClientBuilder::default()
                 .api_key(api_key)
                 .build()?,
-            model: "claude-sonnet-4-5-20250929".into(),
-            max_tokens: 4096,
+            model: model.as_str().into(),
+            max_tokens: max_tokens,
         })
     }
 

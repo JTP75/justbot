@@ -1,3 +1,4 @@
+mod common;
 mod commands;
 mod rustbot;
 mod connection;
@@ -5,7 +6,7 @@ mod connection;
 use dotenvy;
 use rustyline::{DefaultEditor,error::ReadlineError};
 
-use crate::{rustbot::{bot::{DEFAULT_NAME, RustBot}, session::SessionManager}};
+use crate::{rustbot::{bot::RustBot, session::SessionManager}};
 
 fn handle_bot_command(sm: &mut SessionManager, bot: &mut RustBot, input: &str) -> String {
     match bot.handle_command(sm, input) {
@@ -24,7 +25,9 @@ fn main() {
         }
     }
 
-    let mut bot = RustBot::new(DEFAULT_NAME);
+    let name: String = crate::common::config
+        ::get_config("bot_config.rs", "default_name").unwrap_or("rustbot".into());
+    let mut bot = RustBot::new(name);
     let mut sm = SessionManager::new();
     
     println!("\x1b[1;32m>>\x1b[0m Hi, I'm \x1b[0;33mrustbot\x1b[0m! Type 'help' to see what I can do.");
