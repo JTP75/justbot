@@ -42,7 +42,7 @@ impl QdrantClient {
             vectors_config: Some(VectorsConfig { 
                 config: Some(vectors_config::Config::Params(VectorParams {
                     size: crate::common::config
-                        ::get_config::<u64>("vectordb_config", "dimensionality")?,
+                        ::get_config::<u64>("vectordb_config.json", "dimensionality")?,
                     distance: Distance::Cosine.into(),
                     ..Default::default()
                 })), 
@@ -64,20 +64,22 @@ impl QdrantClient {
 
     pub async fn insert_to_collection(&self, collection_name: &str, 
         vector: Vec<f32>, file_path: &str, content: &str)
-    -> Result<(), Box<dyn std::error::Error>> {
+    -> Result<String, Box<dyn std::error::Error>> {
         let payload: Payload = serde_json::json!({
             "file_path": file_path,
             "content": content,
         }).try_into()?;
 
         let id = Uuid::new_v4().to_string();
-        let point = PointStruct::new(id, vector, payload);
+        let point = PointStruct::new(id.clone(), vector, payload);
         let req = UpsertPointsBuilder::new(collection_name, vec![point]);
         
-        self.client.upsert_points(req).await?; // todo the chunking method is better for large sets
+        self.client.upsert_points(req).await?;
         
-        Ok(())
+        Ok(id)
     }
+
+     // todo add a separate insert fn for large vector sets
 
     pub async fn search_collection(&self, collection_name: &str, 
         query_vec: Vec<f32>, limit: u64) 

@@ -38,10 +38,7 @@ impl SessionManager {
                 if !self.current.as_os_str().is_empty() {
                     self.current.clone()
                 } else {
-                    let topic = self.generate_topic(bot).unwrap_or({
-                        println!("Failed to generate topic. using default");
-                        format!("unnamed.json")
-                    });
+                    let topic = self.generate_topic(bot).unwrap_or(format!("unnamed.json"));
                     let filename = self.get_filename_from_topic(topic);
                     self.save_dir.join(filename)
                 }
@@ -84,7 +81,7 @@ impl SessionManager {
             .build()?;
         convo_copy.push(topic_prompt);
         
-        let anthroclient = bot.get_anthropic_client();
+        let anthroclient = bot.get_chat_client();
         let topic_response = anthroclient.send_message(&convo_copy, "", 0.0)?;
 
         match topic_response.content.first() {

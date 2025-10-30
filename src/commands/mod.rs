@@ -48,6 +48,7 @@ pub mod hello;
 pub mod help;
 pub mod message;
 pub mod motd;
+pub mod store;
 
 // session
 pub mod save;

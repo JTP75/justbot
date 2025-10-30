@@ -1,3 +1,6 @@
+use std::fs;
+use std::path::PathBuf;
+
 use anthropic::types::Message;
 use chrono::{self, Local};
 
@@ -60,28 +63,29 @@ impl RustBot {
         }
     }
 
+    pub fn get_name(&self) -> String { self.name.clone() }
+    pub fn get_topic(&self) -> String { self.topic.clone() }
+    pub fn get_messages(&self) -> Vec<Message> { self.messages.clone() }
+    pub fn get_motd(&self) -> (chrono::NaiveDate, Option<String>) { self.motd.clone() }
+    pub fn get_chat_client(&self) -> &AnthropicClient { &self.chat_client }
+    pub fn _get_vdb_client(&self) -> &QdrantClient { &self.vdb_client }
+
+    pub fn store_file(&self, collection_name: &str, path: PathBuf) -> Result<(),Box<dyn std::error::Error>> {
+        tokio::runtime::Runtime::new()?
+            .block_on(self.embed_file(collection_name, path))?;
+        Ok(())
+    }
+    
+
+    pub fn set_topic(&mut self, topic: impl Into<String>) -> () { self.topic = topic.into() }    
+    pub fn set_messages(&mut self, messages: Vec<Message>) -> () { self.messages = messages }    
+    pub fn set_motd(&mut self, motd: (chrono::NaiveDate, Option<String>)) -> () { self.motd = motd }
+
+    pub fn push_message(&mut self, message: Message) -> () { self.messages.push(message) }
     pub fn handle_command(&mut self, sm: &mut SessionManager, input: &str) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let (command,args) = self.parse_command(input)?;
         command.exec(sm, self, &args)
     }
-
-    pub fn get_name(&self) -> String { self.name.clone() }
-
-    pub fn get_topic(&self) -> String { self.topic.clone() }
-
-    pub fn set_topic(&mut self, topic: impl Into<String>) -> () { self.topic = topic.into(); }
-
-    pub fn get_messages(&self) -> Vec<Message> { self.messages.clone() }
-    
-    pub fn set_messages(&mut self, messages: Vec<Message>) -> () { self.messages = messages; }
-
-    pub fn push_message(&mut self, message: Message) -> () { self.messages.push(message) }
-
-    pub fn get_anthropic_client(&self) -> &AnthropicClient { &self.chat_client }
-
-    pub fn get_motd(&self) -> (chrono::NaiveDate, Option<String>) { self.motd.clone() }
-    
-    pub fn set_motd(&mut self, motd: (chrono::NaiveDate, Option<String>)) -> () { self.motd = motd }
 
     // private
 
@@ -96,5 +100,50 @@ impl RustBot {
         let args = tokenized[1..].iter().map(|s| s.to_string()).collect::<Vec<_>>();
 
         Ok(( command, args ))
+    }
+
+    // this should probably be somewhere else
+    async fn embed_file(&self, collection_name: &str, path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+        let content = fs::read_to_string(&path)?;
+        let path_str = match path.to_str() {
+            Some(s) => s,
+            None => { return Err(format!("Error converting path <{}> to &str", path.display()).into()) }
+        };
+        
+        // embed content and path
+        //      fixme theres a better way to group embeddings...
+        let text_data = format!("Path: {}, Content: {}", path_str, content);
+        let embedding = self.embedding_client.get_embedding(&text_data, "document").await?;
+        drop(text_data);
+
+        // store content to
+        self.vdb_client.insert_to_collection(collection_name, embedding, path_str, &content).await?;
+
+        Ok(())
+    }
+
+    // and this
+    // pub async fn 
+}
+
+#[cfg(test)]
+mod tests {
+    use directories::ProjectDirs;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_embed_a_file() {
+        let bot = RustBot::new("testbot");
+        let coll_name = "512_test_collection";
+
+        let project_dirs = ProjectDirs::from("com", "Justin Inc.", "rustbot").unwrap();
+        let path = project_dirs.cache_dir().join("tmp.md");
+
+        let result = bot._get_vdb_client().add_collection(coll_name).await;
+        assert!(result.is_ok(), "{}", result.unwrap_err());
+
+        let result = bot.embed_file(coll_name, path).await;
+        assert!(result.is_ok(), "{}", result.unwrap_err())
     }
 }
