@@ -1,4 +1,4 @@
-use std::fs;
+use std::{env, fs};
 use std::path::PathBuf;
 
 use anthropic::types::{ContentBlock, Message, MessageBuilder, Role};
@@ -25,6 +25,7 @@ pub struct RustBot {
     messages: Vec<Message>,
     motd: (chrono::NaiveDate, Option<String>),
     _date: chrono::NaiveDate,
+    cwd: PathBuf,
 
     _input_tokens: Vec<usize>,
     _output_tokens: Vec<usize>,
@@ -54,6 +55,7 @@ impl RustBot {
     /// let bot = RustBot::new("name");
     /// ```
     pub fn new(name: impl Into<String>) -> Self {
+
         Self { 
             name: name.into(), 
 
@@ -67,6 +69,7 @@ impl RustBot {
             messages: vec![],
             motd: (Local::now().date_naive(), None),
             _date: Local::now().date_naive(),
+            cwd: env::current_dir().unwrap_or(PathBuf::new()),
 
             _input_tokens: vec![],
             _output_tokens: vec![],
@@ -83,6 +86,15 @@ impl RustBot {
     /// assert_eq!(bot_name,"rustbot");
     /// ```
     pub fn get_name(&self) -> String { self.name.clone() }
+
+    /// Get the current working directory of this rust program
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// let cwd: PathBuf = bot.get_cwd();
+    /// ```
+    pub fn get_cwd(&self) -> PathBuf { self.cwd.clone() }
 
     /// Get the topic of the current conversation
     /// 

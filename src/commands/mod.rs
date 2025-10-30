@@ -50,6 +50,7 @@ pub mod message;
 pub mod message_rag;
 pub mod motd;
 pub mod store;
+pub mod whereami;
 
 // session
 pub mod save;
