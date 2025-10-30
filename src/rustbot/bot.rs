@@ -10,15 +10,15 @@ use crate::connection::qdrant_client::QdrantClient;
 use crate::connection::voyage_client::VoyageClient;
 use crate::rustbot::session::SessionManager;
 
+// structs
+
 #[derive(Debug)]
 pub struct RustBot {
 
     // immut fields
     name: String,
 
-    chat_client: AnthropicClient,
-    vdb_client: QdrantClient,
-    embedding_client: VoyageClient,
+    client_mgr: ClientManager,
 
     // state
     topic: String,
@@ -30,6 +30,15 @@ pub struct RustBot {
     _output_tokens: Vec<usize>,
     _total_tokens: Vec<usize>,
 }
+
+#[derive(Debug)]
+pub struct ClientManager {
+    pub chat_client: AnthropicClient,
+    pub vdb_client: QdrantClient,
+    pub embedding_client: VoyageClient,
+}
+
+// impls
 
 impl RustBot {
 
@@ -48,9 +57,11 @@ impl RustBot {
         Self { 
             name: name.into(), 
 
-            chat_client: AnthropicClient::new().unwrap(),
-            vdb_client: QdrantClient::new().unwrap(),
-            embedding_client: VoyageClient::new().unwrap(),
+            client_mgr: ClientManager {
+                chat_client: AnthropicClient::new().unwrap(),
+                vdb_client: QdrantClient::new().unwrap(),
+                embedding_client: VoyageClient::new().unwrap(),
+            },
             
             topic: "".into(),
             messages: vec![],
@@ -63,23 +74,90 @@ impl RustBot {
         }
     }
 
+    /// Get the name of this instance
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// let bot_name = bot.get_name();
+    /// assert_eq!(bot_name,"rustbot");
+    /// ```
     pub fn get_name(&self) -> String { self.name.clone() }
-    pub fn get_topic(&self) -> String { self.topic.clone() }
-    pub fn get_messages(&self) -> Vec<Message> { self.messages.clone() }
-    pub fn get_motd(&self) -> (chrono::NaiveDate, Option<String>) { self.motd.clone() }
-    pub fn get_chat_client(&self) -> &AnthropicClient { &self.chat_client }
-    pub fn _get_vdb_client(&self) -> &QdrantClient { &self.vdb_client }
 
+    /// Get the topic of the current conversation
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// // e.g. messaging about cheese
+    /// let topic = bot.get_topic();
+    /// assert_eq!(topic,"cheese");
+    /// ```
+    pub fn get_topic(&self) -> String { self.topic.clone() }
+
+    /// Get a copy of the current conversation's message log
+    /// 
+    /// - Returns a Vec of anthropic messages
+    /// - Does not generate a topic if topic is empty
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// let messages = bot.get_messages();
+    /// ```
+    pub fn get_messages(&self) -> Vec<anthropic::types::Message> { self.messages.clone() }
+
+    /// Get a copy of the current motd
+    /// 
+    /// - Returns None if motd is empty
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// let motd = bot.get_motd();
+    /// ```
+    pub fn get_motd(&self) -> (chrono::NaiveDate, Option<String>) { self.motd.clone() }
+
+    /// Get a reference to the LLM chat client (anthropic in this case)
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// let anthropic_client = bot.get_chat_client();
+    /// ```
+    pub fn get_chat_client(&self) -> &AnthropicClient { &self.client_mgr.chat_client }
+
+    /// Get a reference to the vector database client (Qdrant in this case)
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// let vdb_client = bot._get_vdb_client();
+    /// ```
+    pub fn _get_vdb_client(&self) -> &QdrantClient { &self.client_mgr.vdb_client }
+
+    /// Store a file to locally hosted vector database
+    /// 
+    /// - collection_name must match the name of a valid collection
+    /// - path must resolve to the location of a file
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// bot.store_file("512_test_collection", "path/to/some/file.md")
+    /// ```
     pub fn store_file(&self, collection_name: &str, path: PathBuf) -> Result<(),Box<dyn std::error::Error>> {
         tokio::runtime::Runtime::new()?
-            .block_on(self.embed_file(collection_name, path))?;
+            .block_on(self.client_mgr.embed_file(collection_name, path))?;
         Ok(())
     }
+
+    /// todo write desc
     pub fn query_with_rag(&self, collection_name: &str, query: &str)
     -> Result<Message, Box<dyn std::error::Error>> {
 
         let runtime = tokio::runtime::Runtime::new()?;
-        let json_context = runtime.block_on(self.query_vdb(collection_name, query))?;
+        let json_context = runtime.block_on(self.client_mgr.query_vdb(collection_name, query))?;
         let context = serde_json::to_string_pretty(&json_context)?;
 
         // build and return anthropic message object
@@ -94,12 +172,19 @@ impl RustBot {
         Ok(message)
     }
     
-
-    pub fn set_topic(&mut self, topic: impl Into<String>) -> () { self.topic = topic.into() }    
+    /// todo write desc
+    pub fn set_topic(&mut self, topic: impl Into<String>) -> () { self.topic = topic.into() }   
+    
+    /// todo write desc 
     pub fn set_messages(&mut self, messages: Vec<Message>) -> () { self.messages = messages }    
+    
+    /// todo write desc
     pub fn set_motd(&mut self, motd: (chrono::NaiveDate, Option<String>)) -> () { self.motd = motd }
 
+    /// todo write desc
     pub fn push_message(&mut self, message: Message) -> () { self.messages.push(message) }
+    
+    /// todo write desc
     pub fn handle_command(&mut self, sm: &mut SessionManager, input: &str) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let (command,args) = self.parse_command(input)?;
         command.exec(sm, self, &args)
@@ -107,6 +192,7 @@ impl RustBot {
 
     // private
 
+    /// todo write desc
     fn parse_command(&self, input: &str) -> Result<(Box<dyn Command>, Vec<String>), Box<dyn std::error::Error>> {
         let tokenized: Vec<&str> =  input.split_whitespace().collect();
         let command_name = tokenized.first().ok_or("User input empty")?;
@@ -119,9 +205,12 @@ impl RustBot {
 
         Ok(( command, args ))
     }
+}
 
-    // this should probably be somewhere else
-    async fn embed_file(&self, collection_name: &str, path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+impl ClientManager {
+    
+    /// todo write desc
+    pub async fn embed_file(&self, collection_name: &str, path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         let content = fs::read_to_string(&path)?;
         let path_str = match path.to_str() {
             Some(s) => s,
@@ -140,9 +229,10 @@ impl RustBot {
 
         Ok(())
     }
-
-    // and this
-    async fn query_vdb(&self, collection_name: &str, query: &str) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    
+    
+    /// todo write desc
+    pub async fn query_vdb(&self, collection_name: &str, query: &str) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
 
         // vectorize query
         let qvec = self.embedding_client.get_embedding(query, "query").await?;
@@ -184,7 +274,7 @@ mod tests {
         let _result = bot._get_vdb_client().add_collection(coll_name).await;
         // assert!(result.is_ok(), "{}", result.unwrap_err());
 
-        let result = bot.embed_file(coll_name, path).await;
+        let result = bot.client_mgr.embed_file(coll_name, path).await;
         assert!(result.is_ok(), "{}", result.unwrap_err())
     }
 }
