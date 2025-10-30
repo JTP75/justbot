@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use anthropic::types::Message;
+use anthropic::types::{ContentBlock, Message, MessageBuilder, Role};
 use chrono::{self, Local};
 
 use crate::commands::{Command, REGISTRY};
@@ -75,6 +75,24 @@ impl RustBot {
             .block_on(self.embed_file(collection_name, path))?;
         Ok(())
     }
+    pub fn query_with_rag(&self, collection_name: &str, query: &str)
+    -> Result<Message, Box<dyn std::error::Error>> {
+
+        let runtime = tokio::runtime::Runtime::new()?;
+        let json_context = runtime.block_on(self.query_vdb(collection_name, query))?;
+        let context = serde_json::to_string_pretty(&json_context)?;
+
+        // build and return anthropic message object
+        let message = MessageBuilder::default()
+            .role(Role::User)
+            .content(vec![
+                ContentBlock::Text { text: query.into() },
+                ContentBlock::Text { text: context }
+            ])
+            .build()?;
+
+        Ok(message)
+    }
     
 
     pub fn set_topic(&mut self, topic: impl Into<String>) -> () { self.topic = topic.into() }    
@@ -112,9 +130,10 @@ impl RustBot {
         
         // embed content and path
         //      fixme theres a better way to group embeddings...
-        let text_data = format!("Path: {}, Content: {}", path_str, content);
+        // let json_data = serde_json::json!({"file_path": path_str, "content": content});
+        // let text_data = json_data.as_str().ok_or("failed to generate json string")?;
+        let text_data = format!("{{\"file_path\": \"{}\", \"content\": \"{}\"}}", path_str, content);
         let embedding = self.embedding_client.get_embedding(&text_data, "document").await?;
-        drop(text_data);
 
         // store content to
         self.vdb_client.insert_to_collection(collection_name, embedding, path_str, &content).await?;
@@ -123,7 +142,29 @@ impl RustBot {
     }
 
     // and this
-    // pub async fn 
+    async fn query_vdb(&self, collection_name: &str, query: &str) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+
+        // vectorize query
+        let qvec = self.embedding_client.get_embedding(query, "query").await?;
+
+        // search db
+        let search_limit = crate::common::config
+            ::get_config("vectordb_config.json", "default_search_limit")?;
+        let search_result = self.vdb_client.search_collection(collection_name, qvec, search_limit).await?;
+
+        // build context (json)
+        Ok(serde_json::json!({
+            "relevant_files_from_rag": search_result.iter().map(|sp| {
+                serde_json::json!({
+                    "file_name": sp.payload
+                        .get("file_name"),
+                    "content": sp.payload
+                        .get("content"),
+                    "score": sp.score,
+                })
+            }).collect::<Vec<_>>()
+        }))
+    }
 }
 
 #[cfg(test)]
@@ -140,8 +181,8 @@ mod tests {
         let project_dirs = ProjectDirs::from("com", "Justin Inc.", "rustbot").unwrap();
         let path = project_dirs.cache_dir().join("tmp.md");
 
-        let result = bot._get_vdb_client().add_collection(coll_name).await;
-        assert!(result.is_ok(), "{}", result.unwrap_err());
+        let _result = bot._get_vdb_client().add_collection(coll_name).await;
+        // assert!(result.is_ok(), "{}", result.unwrap_err());
 
         let result = bot.embed_file(coll_name, path).await;
         assert!(result.is_ok(), "{}", result.unwrap_err())

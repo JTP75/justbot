@@ -47,6 +47,7 @@ pub static REGISTRY: Lazy<std::sync::Mutex<CommandRegistry>> =
 pub mod hello;
 pub mod help;
 pub mod message;
+pub mod message_rag;
 pub mod motd;
 pub mod store;
 
