@@ -9,19 +9,21 @@ A simple rust chatbot that responds to specific phrases
 - implement chunking
 - store multiple files at once (command)
 - setup script
+    - check for docker, install qdrant
+    - install pdftotext
+- add bulk store fn to bot.rs
 
 ### READY
 
 - update this file u dumbass
 - fix help command to write aliases
-- add bulk store fn to bot.rs
-- add pipeline output feature
 
 ### IN PROGRESS
 
 
 ### IN REVIEW
 
+- add pipeline output feature
 - startup
 - handle pdfs (lopri)
 

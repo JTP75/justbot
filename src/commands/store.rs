@@ -30,14 +30,15 @@ impl Command for StoreCommand {
             // TLDR: MAKE THIS KILLABLE
             //
             // should probably implement a function in bot.rs like "store_files" or "store_bulk"
-            log::info!("[info] This is a directory. {:?}", path);
+            log::info!("This is a directory. {:?}", path);
 
             // let files = std::fs::read_dir(path).map(|child_path| );
 
             Err("store is not implemented for directories yet".into())
             // Ok(Some(format!("Successfully stored all files to collection: {}.", collection_name)))
         } else if path.is_file() {
-            log::info!("[info] This is a file. {:?}", path);
+            let path = bot.validate_filename(path_str)?;
+            log::info!("This is a file. {:?}", path);
             bot.store_file(&collection_name, path)?;
             Ok(Some(format!("Successfully stored file to collection: {}.", collection_name)))
         } else {

@@ -1,5 +1,5 @@
 use std::{env, fs};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anthropic::types::{ContentBlock, Message, MessageBuilder, Role};
 use chrono::{self, Local};
@@ -235,7 +235,62 @@ impl RustBot {
     /// todo write desc
     pub fn handle_command(&mut self, sm: &mut SessionManager, input: &str) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let (command,args) = self.parse_command(input)?;
-        command.exec(sm, self, &args)
+        let output = command.exec(sm, self, &args);
+        if let Ok(Some(response)) = &output {
+            if let Some(i) = args.iter().enumerate()
+                .find_map(|(i,arg)| if *arg==">" {Some(i)} else {None}) 
+            {
+                log::info!("Pipelining output...");
+
+                // Check if filename argument exists
+                let filename = args.get(i + 1)
+                    .ok_or("Missing filename after '>'")?;
+
+                match self.validate_filename(&filename) {
+                    Ok(canonical_path) => {
+                        fs::write(&canonical_path, response)?;
+                        log::info!("Pipeline output success!")
+                    },
+                    Err(e) => 
+                        log::warn!("Pipeline to file failed: {e}")
+                }
+            }
+        }
+        output
+    }
+
+    /// todo write desc
+    pub fn validate_filename(&self, filename: &str) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
+        if filename.trim().is_empty() {
+            return Err("Filename cannot be empty".into());
+        }
+
+        let invalid_chars = ['<', '>', ':', '"', '|', '?', '*', '\0'];
+        if filename.chars().any(|c| invalid_chars.contains(&c)) {
+            return Err(format!("Filename contains invalid characters: {}", filename).into());
+        }
+
+        let path = Path::new(filename);
+        
+        let canonical = if let Some(parent) = path.parent() {
+            if !parent.as_os_str().is_empty() {
+
+                let canonical_parent = parent.canonicalize()
+                    .map_err(|_| format!("Directory does not exist: {}", parent.display()))?;
+                
+                if let Some(file_name) = path.file_name() {
+                    canonical_parent.join(file_name)
+                } else {
+                    return Err("Invalid filename".into());
+                }
+            } else {
+                std::env::current_dir()?.join(path)
+            }
+        } else {
+            std::env::current_dir()?.join(path)
+        };
+
+        Ok(canonical)
     }
 
     // private
