@@ -22,10 +22,9 @@ impl Command for MotdCommand {
         if motd.0==todays_date && motd.1.is_some() && !reroll {
             Ok(motd.1)
         } else {
-
             let mut convo_copy = bot.get_messages();
             let motd_prompt: String = crate::common::config
-                ::get_config("prompts", "motd")?;
+                ::get_config("prompts.json", "motd")?;
             let user_message = MessageBuilder::default()
                 .role(Role::User)
                 .content(vec![ContentBlock::Text {
