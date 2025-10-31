@@ -6,19 +6,22 @@ A simple rust chatbot that responds to specific phrases
 
 ### BACKLOG
 
-- add pipeline output feature
 - store multiple files at once (command)
-- add bulk store fn to bot.rs
-- fix help command to write aliases
-- add history to cli
 
 ### READY
 
+- display loaded conversations
+- fix help command to write aliases
+- add bulk store fn to bot.rs
+- add pipeline output feature
+
 ### IN PROGRESS
 
-- handle pdfs
+- add history to cli
 
 ### IN REVIEW
+
+- handle pdfs (lopri)
 
 ### DONE
 

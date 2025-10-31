@@ -4,7 +4,7 @@ mod rustbot;
 mod connection;
 
 use dotenvy;
-use rustyline::{DefaultEditor,error::ReadlineError};
+use rustyline::{self,error::ReadlineError};
 
 use crate::{rustbot::{bot::RustBot, session::SessionManager}};
 
@@ -43,7 +43,17 @@ fn main() {
         Err(e) => println!("\x1b[1;31m>>\x1b[0m Failed to load motd on startup: {}", e)
     }
 
-    let mut rl = DefaultEditor::new().unwrap();
+    // set up rustyline
+    let rl_config = rustyline::config::Builder::new()
+        .history_ignore_space(true)
+        .history_ignore_dups(true).unwrap()
+        .max_history_size(5000).unwrap()
+        .build();
+    let mut rl = rustyline::DefaultEditor::with_config(rl_config).unwrap();
+    if rl.load_history(&sm.data_dir.join("rustyline_history.txt")).is_err() {
+        eprintln!("Failed to load rustyline CLI history");
+    }
+
     loop {
         match rl.readline("\x1b[1;33m<<\x1b[0m ") {
             Ok(line) => {
@@ -56,6 +66,7 @@ fn main() {
                         break;
                     },
                     _ => {
+                        let _ = rl.add_history_entry(&line);
                         let response = handle_bot_command(&mut sm, &mut bot, &line);
                         if let Some(r) = response { println!("{}", r); }
                     },
@@ -69,4 +80,6 @@ fn main() {
             }
         }
     }
+
+    let _ = rl.save_history(&sm.data_dir.join("rustyline_history.txt"));
 }
