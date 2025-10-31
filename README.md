@@ -21,6 +21,8 @@ todo install instructions
 - setup script
     - check for docker, install qdrant
     - install pdftotext
+    - create project dirs
+    - generate default config files
 - add bulk store fn to bot.rs
 
 ### READY
