@@ -6,18 +6,19 @@ A simple rust chatbot that responds to specific phrases
 
 ### BACKLOG
 
+- implement chunking
 - store multiple files at once (command)
 
 ### READY
 
-- display loaded conversations
+- update this file u dumbass
 - fix help command to write aliases
 - add bulk store fn to bot.rs
 - add pipeline output feature
 
 ### IN PROGRESS
 
-- add history to cli
+- display loaded conversations
 
 ### IN REVIEW
 
@@ -25,6 +26,7 @@ A simple rust chatbot that responds to specific phrases
 
 ### DONE
 
+- add history to cli
 - collection management commands
 - create collection automatically in store function
 - rag pipeline

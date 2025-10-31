@@ -1,3 +1,5 @@
+use anthropic::types::{ContentBlock, Role};
+
 use crate::rustbot::{bot::RustBot, session::SessionManager};
 
 use super::{Command, REGISTRY};
@@ -16,7 +18,28 @@ impl Command for LoadCommand {
         };
 
         match sm.load_session(bot,filename) {
-            Ok(_) => Ok(Some(format!("Loaded session from {}", sm.current.clone().as_os_str().display()))),
+            Ok(_) => {
+                let mut past_messages_display = String::new();
+                for message in bot.get_messages().iter() {
+                    if let Some(cb) = message.content.first() {
+                        match cb {
+                            ContentBlock::Text { text } => {
+                                past_messages_display.push_str(match message.role { 
+                                    Role::User => "\n\x1b[1;33m<<\x1b[0m ", 
+                                    Role::Assistant => "\n\x1b[1;32m>>\x1b[0m " 
+                                });
+                                past_messages_display.push_str(text)
+                            },
+                            _ => ()
+                        }
+                    }
+                }
+                Ok(Some(format!(
+                    "Loaded session from {}{}\n", 
+                    sm.current.clone().as_os_str().display(),
+                    past_messages_display
+                )))
+            },
             Err(e) => Err(format!("Failed to load session from {}: {}", sm.current.clone().as_os_str().display(),e).into())
         }        
     }
