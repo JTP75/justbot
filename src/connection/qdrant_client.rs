@@ -30,7 +30,7 @@ impl QdrantClient {
 
         let url = format!("http://{}:{}/collections", host, port);
         Ok(Self {
-            client: Qdrant::from_url(&url).build()?,
+            client: Qdrant::from_url(&url).skip_compatibility_check().build()?,
             _url: url,
         })
     }

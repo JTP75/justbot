@@ -8,6 +8,7 @@ A simple rust chatbot that responds to specific phrases
 
 - implement chunking
 - store multiple files at once (command)
+- setup script
 
 ### READY
 
@@ -18,14 +19,15 @@ A simple rust chatbot that responds to specific phrases
 
 ### IN PROGRESS
 
-- display loaded conversations
 
 ### IN REVIEW
 
+- startup
 - handle pdfs (lopri)
 
 ### DONE
 
+- display loaded conversations
 - add history to cli
 - collection management commands
 - create collection automatically in store function

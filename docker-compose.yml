@@ -11,7 +11,7 @@ services:
       - ~/qdrant_storage:/qdrant/storage:z
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:6334/health"]
       interval: 5s
       timeout: 3s
       retries: 5
