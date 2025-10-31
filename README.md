@@ -15,8 +15,8 @@ A simple rust chatbot that responds to specific phrases
 
 ### READY
 
+- motd is broken
 - update this file u dumbass
-- fix help command to write aliases
 
 ### IN PROGRESS
 
@@ -29,6 +29,7 @@ A simple rust chatbot that responds to specific phrases
 
 ### DONE
 
+- fix help command to write aliases
 - display loaded conversations
 - add history to cli
 - collection management commands

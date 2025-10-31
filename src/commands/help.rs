@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::rustbot::{bot::RustBot, session::SessionManager};
 
 use super::{Command, REGISTRY};
@@ -24,10 +26,12 @@ impl Command for HelpCommand {
                 Ok(Some(format!("{}\n\nDESC\n{}\n\nHELP\n{}\n", command_name, command.desc(), command.help())))
             },
             None => {
+                let mut seen = HashSet::new();
                 let commands = REGISTRY.lock().unwrap()
                     .get_commands()
                     .iter()
-                    .map(|command| command.name())
+                    .filter(|command| seen.insert(command.name().to_string()))
+                    .map(|command| format!("{:20}\taliases=({})", command.name(), command.aliases().join(" | ")))
                     .collect::<Vec<_>>()
                     .join("\n\t");
                 Ok(Some(format!("Available commands are: \n\t{}", commands)))
