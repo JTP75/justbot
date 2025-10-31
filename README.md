@@ -1,8 +1,18 @@
 # RustBot
 
-A simple rust chatbot that responds to specific phrases
+## Brief
 
-## kanban
+A chatbot implemented in rust using LLM APIs. Now equipped with RAG pipeline!
+
+## Features
+
+todo list features
+
+## Installation
+
+todo install instructions
+
+## KanBan
 
 ### BACKLOG
 
@@ -15,7 +25,7 @@ A simple rust chatbot that responds to specific phrases
 
 ### READY
 
-- update this file u dumbass
+- update this file
 
 ### IN PROGRESS
 
@@ -23,11 +33,13 @@ A simple rust chatbot that responds to specific phrases
 ### IN REVIEW
 
 - add pipeline output feature
-- startup
+    - needs more testing
 - handle pdfs (lopri)
 
 ### DONE
 
+- add qdrant docker-compose to startup
+- startup
 - motd is broken
 - fix help command to write aliases
 - display loaded conversations
