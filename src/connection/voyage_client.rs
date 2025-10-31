@@ -40,15 +40,13 @@ impl VoyageClient {
             .send().await?
             .json::<serde_json::Value>().await?;
 
-        // fixme this will panic
-        let embedding = response["data"][0]["embedding"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|v| v.as_f64().unwrap() as f32)
-            .collect();
+        // print!("{}", response);
 
-        Ok(embedding)
+        let result = response["data"][0]["embedding"].as_array();
+        match result {
+            Some(arr) => Ok(arr.iter().map(|v| v.as_f64().unwrap() as f32).collect()),
+            None => Err("Embedding is null, voyage api request probably failed".into())
+        }
     }
 }
 

@@ -8,11 +8,11 @@ use rustyline::{DefaultEditor,error::ReadlineError};
 
 use crate::{rustbot::{bot::RustBot, session::SessionManager}};
 
-fn handle_bot_command(sm: &mut SessionManager, bot: &mut RustBot, input: &str) -> String {
+fn handle_bot_command(sm: &mut SessionManager, bot: &mut RustBot, input: &str) -> Option<String> {
     match bot.handle_command(sm, input) {
-        Ok(Some(response)) => format!("\x1b[1;32m>>\x1b[0m {}", response),
-        Ok(None) => "\x1b[1;32m>>\x1b[0m Command executed successfully.".into(),
-        Err(e) => format!("\x1b[1;31m>>\x1b[0m {}", e)
+        Ok(Some(response)) => Some(format!("\x1b[1;32m>>\x1b[0m {}", response)),
+        Ok(None) => None,
+        Err(e) => Some(format!("\x1b[1;31m>>\x1b[0m {}", e))
     }
 }
 
@@ -52,12 +52,12 @@ fn main() {
                 match first {
                     "exit" | "wexit" => {
                         let response = handle_bot_command(&mut sm, &mut bot, &line);
-                        println!("{}", response);
+                        if let Some(r) = response { println!("{}", r); }
                         break;
                     },
                     _ => {
                         let response = handle_bot_command(&mut sm, &mut bot, &line);
-                        println!("{}", response);
+                        if let Some(r) = response { println!("{}", r); }
                     },
                 }
             }

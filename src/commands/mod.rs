@@ -51,6 +51,8 @@ pub mod message_rag;
 pub mod motd;
 pub mod store;
 pub mod whereami;
+pub mod get_collection;
+pub mod set_collection;
 
 // session
 pub mod save;

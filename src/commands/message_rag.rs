@@ -12,8 +12,11 @@ impl Command for MessageRagCommand {
     fn desc(&self) -> &str { "Send a message to claude using anthropic api with RAG (retrieval augmented generation)" }
     fn help(&self) -> &str { "Usage: message-rag <message>\nMessage does not need to be in quotation marks. Currently uses default_collection for RAG" }
     fn exec(&self, _sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
-        let collection_name: String = crate::common::config
-            ::get_config("bot_config.json", "default_collection")?;
+        let collection_name: String = match bot.get_current_collection() {
+            Some(cn) => cn,
+            None => crate::common::config
+                ::get_config("bot_config.json", "default_collection")?,
+        };
 
         let user_message = bot.query_with_rag(&collection_name, &args.join(" "))?;
         bot.push_message(user_message);

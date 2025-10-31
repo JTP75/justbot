@@ -26,6 +26,7 @@ pub struct RustBot {
     motd: (chrono::NaiveDate, Option<String>),
     _date: chrono::NaiveDate,
     cwd: PathBuf,
+    collection: Option<String>,
 
     _input_tokens: Vec<usize>,
     _output_tokens: Vec<usize>,
@@ -70,6 +71,7 @@ impl RustBot {
             motd: (Local::now().date_naive(), None),
             _date: Local::now().date_naive(),
             cwd: env::current_dir().unwrap_or(PathBuf::new()),
+            collection: None,
 
             _input_tokens: vec![],
             _output_tokens: vec![],
@@ -148,6 +150,37 @@ impl RustBot {
     /// ```
     pub fn _get_vdb_client(&self) -> &QdrantClient { &self.client_mgr.vdb_client }
 
+    /// todo write desc
+    pub fn get_current_collection(&self) -> Option<String> { self.collection.clone() }
+
+    /// Get a list of all collections
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// // returns result of a vec of strings
+    /// let collections = bot.get_existing_collections().unwrap();
+    /// ```
+    #[allow(unused)]
+    pub fn get_existing_collections(&self) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+        let collections = tokio::runtime::Runtime::new()?
+            .block_on(self.client_mgr.vdb_client.list_collections())?;
+        Ok(collections)
+    }
+
+    /// Add a named collection to the vector database
+    /// 
+    /// - will error if collection already exists, but this can be ignored
+    /// 
+    /// ```
+    /// bot.add_collection("my_new_collection").unwrap();
+    /// ```
+    pub fn add_collection(&self, collection_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let result = tokio::runtime::Runtime::new()?
+            .block_on(self.client_mgr.vdb_client.add_collection(collection_name))?;
+        Ok(result)
+    }
+
     /// Store a file to locally hosted vector database
     /// 
     /// - collection_name must match the name of a valid collection
@@ -194,6 +227,9 @@ impl RustBot {
     pub fn set_motd(&mut self, motd: (chrono::NaiveDate, Option<String>)) -> () { self.motd = motd }
 
     /// todo write desc
+    pub fn set_current_collection(&mut self, collection: Option<String>) -> () { self.collection = collection }
+
+    /// todo write desc
     pub fn push_message(&mut self, message: Message) -> () { self.messages.push(message) }
     
     /// todo write desc
@@ -223,12 +259,17 @@ impl ClientManager {
     
     /// todo write desc
     pub async fn embed_file(&self, collection_name: &str, path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
-        let content = fs::read_to_string(&path)?;
         let path_str = match path.to_str() {
             Some(s) => s,
             None => { return Err(format!("Error converting path <{}> to &str", path.display()).into()) }
         };
-        
+        let content = match path.extension().unwrap().to_str() {
+            Some("pdf") => crate::common::pdf
+                ::extract_pdf_text(&path)?,
+            _ => fs::read_to_string(&path)
+                .map_err(|_| format!("File at {} is not valid UTF-8", path.display()))?
+        };
+
         // embed content and path
         //      fixme theres a better way to group embeddings...
         // let json_data = serde_json::json!({"file_path": path_str, "content": content});
@@ -278,10 +319,14 @@ mod tests {
     #[tokio::test]
     async fn test_embed_a_file() {
         let bot = RustBot::new("testbot");
-        let coll_name = "512_test_collection";
+        let coll_name = "test_collection_botrs";
 
         let project_dirs = ProjectDirs::from("com", "Justin Inc.", "rustbot").unwrap();
+#[allow(unused)]
         let path = project_dirs.cache_dir().join("tmp.md");
+
+        let path = PathBuf::from("/mnt/c/Users/pacel/northeastern/fall_2025/TELE6510/readings/ieee_the_institute_iot.pdf");
+        // let path = PathBuf::from("/mnt/c/Users/pacel/northeastern/fall_2025/TELE6510/homework/hw1.pdf");
 
         let _result = bot._get_vdb_client().add_collection(coll_name).await;
         // assert!(result.is_ok(), "{}", result.unwrap_err());
