@@ -1,11 +1,12 @@
-#![allow(unused)]
+// #![allow(unused)]
+
+use std::hash::{DefaultHasher, Hasher};
 
 use qdrant_client::{
     Payload, Qdrant, qdrant::{
         CreateCollection, Distance, PointStruct, ScoredPoint, SearchPoints, UpsertPointsBuilder, VectorParams, VectorsConfig, vectors_config
     }
 };
-use uuid::Uuid;
 
 pub struct QdrantClient {
     client: Qdrant,
@@ -69,19 +70,29 @@ impl QdrantClient {
     /// Insert one vector to a collection in the Vector DB
     pub async fn insert_to_collection(&self, collection_name: &str, 
         vector: Vec<f32>, file_path: &str, content: &str)
-    -> Result<String, Box<dyn std::error::Error>> {
+    -> Result<u64, Box<dyn std::error::Error>> {
         let payload: Payload = serde_json::json!({
             "file_path": file_path,
             "content": content,
         }).try_into()?;
 
-        let id = Uuid::new_v4().to_string();
+        let mut hasher = DefaultHasher::new();
+        hasher.write(file_path.as_bytes());
+
+        let id = hasher.finish();
         let point = PointStruct::new(id.clone(), vector, payload);
         let req = UpsertPointsBuilder::new(collection_name, vec![point]);
         
         self.client.upsert_points(req).await?;
         
         Ok(id)
+    }
+
+    #[allow(unused)]
+    pub async fn insert_multiple_to_collection(&self, collection_name: &str, 
+        vector: Vec<Vec<f32>>, file_paths: Vec<&str>, contents: Vec<&str>)
+    -> Result<Vec<String>, Box<dyn std::error::Error>> {
+        Err("Not implemented".into())
     }
 
     // todo add a separate insert fn for large vector sets
