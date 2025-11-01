@@ -12,6 +12,8 @@ pub struct VoyageClient {
 }
 
 impl VoyageClient {
+
+    /// Create a new instance of `VoyageClient`
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         let project_dirs = ProjectDirs::from("com", "Justin Inc.", "rustbot").unwrap();
         let env_path = project_dirs.config_dir().join(".env");
@@ -28,6 +30,11 @@ impl VoyageClient {
         })
     }
 
+    /// Get the embedding for input text
+    /// 
+    /// - `input_text` can be either "document" or "query"
+    ///     - use "document" to embed the contents of a file
+    ///     - use "query" to get the query vector for a search query
     pub async fn get_embedding(&self, text: &str, input_type: &str) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
         let response = self.client
             .post(&self.url)

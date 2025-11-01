@@ -19,6 +19,7 @@ impl AnthropicClient {
 
     // public
 
+    /// Create a new `AnthropicClient` instance
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         let project_dirs = ProjectDirs::from("com", "Justin Inc.", "rustbot").unwrap();
         let env_path = project_dirs.config_dir().join(".env");
@@ -39,7 +40,8 @@ impl AnthropicClient {
         })
     }
 
-    pub fn send_message(&self, messages: &Vec<Message>, sys_prompt: &str, randomness: f64) -> Result<MessagesResponse,Box<dyn std::error::Error>> {
+    /// Sends a list of messages, system prompt, and randomness (temperature) to the LLM and returns the response
+    pub fn call_model(&self, messages: &Vec<Message>, sys_prompt: &str, randomness: f64) -> Result<MessagesResponse,Box<dyn std::error::Error>> {
         let request = MessagesRequestBuilder::default()
             .model(&self.model)
             .max_tokens(self.max_tokens)
@@ -47,19 +49,19 @@ impl AnthropicClient {
             .messages(&messages[..])
             .system(sys_prompt)
             .build()?;
-        let response = self.call_api(request)?;
+        let response = self.send_request(request)?;
         Ok(response)
     }
 
     // private
 
-    fn call_api(&self, request: MessagesRequest) -> Result<MessagesResponse, Box<dyn std::error::Error>> {
+    fn send_request(&self, request: MessagesRequest) -> Result<MessagesResponse, Box<dyn std::error::Error>> {
         let response = tokio::runtime::Runtime::new()?
-            .block_on(self.call_api_future(request))?;
+            .block_on(self.send_request_async(request))?;
         Ok(response)
     }
 
-    async fn call_api_future(&self, request: MessagesRequest) -> Result<MessagesResponse, Box<dyn std::error::Error>> {
+    async fn send_request_async(&self, request: MessagesRequest) -> Result<MessagesResponse, Box<dyn std::error::Error>> {
         let response = self.client.messages(request).await?;
         Ok(response)
     }

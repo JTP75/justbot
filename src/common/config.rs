@@ -2,6 +2,10 @@ use std::{collections::HashMap, fs};
 
 use directories::ProjectDirs;
 
+/// Retrieves config value given a filename and key
+/// 
+/// - assumes that all config files are stored in `ProjectDirs::config_dir()`
+/// - works for any integer type, boolean, or string
 pub fn get_config<T>(filename: &str, key: &str) -> Result<T,Box<dyn std::error::Error>> 
     where 
         T: std::str::FromStr, 

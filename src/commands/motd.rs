@@ -33,7 +33,7 @@ impl Command for MotdCommand {
                 .build()?;
             convo_copy.push(user_message);
 
-            let response = bot.get_chat_client().send_message(&convo_copy, "", 1.0)?;
+            let response = bot.get_chat_client().call_model(&convo_copy, "", 1.0)?;
             let response_text: String = match response.content.first() {
                 Some(ContentBlock::Text { text }) => text.into(),
                 Some(ContentBlock::Image { source: _, media_type: _, data: _ }) => "Unexpected content block type".into(),

@@ -22,6 +22,8 @@ impl std::fmt::Debug for QdrantClient {
 }
 
 impl QdrantClient {
+
+    /// Create a new gRPC `QdrantClient` instance 
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         let host: String = crate::common::config
             ::get_config("vectordb_config.json", "host")?;
@@ -35,6 +37,7 @@ impl QdrantClient {
         })
     }
 
+    /// Create a new collection in the VectorDB
     pub async fn add_collection(&self, collection_name: &str) 
     -> Result<(), Box<dyn std::error::Error>> {
         let req = CreateCollection {
@@ -53,6 +56,7 @@ impl QdrantClient {
         Ok(())
     }
 
+    /// List all available collections in the Vector DB
     pub async fn list_collections(&self)
     -> Result<Vec<String>, Box<dyn std::error::Error>> {
         let collections = self.client.list_collections().await?;
@@ -62,6 +66,7 @@ impl QdrantClient {
         Ok(list)
     }
 
+    /// Insert one vector to a collection in the Vector DB
     pub async fn insert_to_collection(&self, collection_name: &str, 
         vector: Vec<f32>, file_path: &str, content: &str)
     -> Result<String, Box<dyn std::error::Error>> {
@@ -79,8 +84,11 @@ impl QdrantClient {
         Ok(id)
     }
 
-     // todo add a separate insert fn for large vector sets
+    // todo add a separate insert fn for large vector sets
 
+    /// Search a collection in the Vector DB using a query vector
+    /// 
+    /// - `limit` is the max number of results to return
     pub async fn search_collection(&self, collection_name: &str, 
         query_vec: Vec<f32>, limit: u64) 
     -> Result<Vec<ScoredPoint>, Box<dyn std::error::Error>> {

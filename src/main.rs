@@ -10,6 +10,7 @@ use rustyline::{self,error::ReadlineError};
 
 use crate::{rustbot::{bot::RustBot, session::SessionManager}};
 
+/// callback for handling bot commands
 fn handle_bot_command(sm: &mut SessionManager, bot: &mut RustBot, input: &str) -> Option<String> {
     match bot.handle_command(sm, input) {
         Ok(Some(response)) => Some(format!("\x1b[1;32m>>\x1b[0m {}", response)),
@@ -18,6 +19,9 @@ fn handle_bot_command(sm: &mut SessionManager, bot: &mut RustBot, input: &str) -
     }
 }
 
+/// Program startup routine
+/// 
+/// - start Qdrant Vector DB using docker-compose script
 fn startup() -> Result<(),Box<dyn std::error::Error>> {
     log::info!("Entering startup...");
 
@@ -40,6 +44,9 @@ fn startup() -> Result<(),Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/// Program shutdown routine
+/// 
+/// - stop Qdrant Vector DB using docker-compose script
 fn shutdown() -> Result<(),Box<dyn std::error::Error>> {
     log::info!("Entering shutdown...");
 
@@ -132,6 +139,7 @@ fn main() {
         }
     }
 
+    // save rustyline history
     let result = rl.save_history(&sm.data_dir.join("rustyline_history.txt"));
     if let Err(e) = result {
         log::warn!("Failed to save rustyline history: {e}");

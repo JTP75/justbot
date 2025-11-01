@@ -24,7 +24,7 @@ impl Command for MessageRagCommand {
         let sys_prompt: String = crate::common::config
             ::get_config("bot_config.json", "base_sys_prompt")?;
         let client = bot.get_chat_client();
-        let response = client.send_message(&bot.get_messages(), &sys_prompt, 0.75)?;
+        let response = client.call_model(&bot.get_messages(), &sys_prompt, 0.75)?;
 
         let agent_message = MessageBuilder::default()
             .role(Role::Assistant)
