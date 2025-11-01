@@ -90,8 +90,7 @@ impl SessionManager {
             .build()?;
         convo_copy.push(topic_prompt);
         
-        let anthroclient = bot.get_chat_client();
-        let topic_response = anthroclient.call_model(&convo_copy, "", 0.0)?;
+        let topic_response = bot.query_llm(&convo_copy, "", 0.0)?;
 
         match topic_response.content.first() {
             Some(ContentBlock::Text { text }) => Ok(text.chars().filter(|c| c.is_alphanumeric() || c.is_whitespace()).collect()),

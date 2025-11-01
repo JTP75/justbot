@@ -18,13 +18,12 @@ impl Command for MessageRagCommand {
                 ::get_config("bot_config.json", "default_collection")?,
         };
 
-        let user_message = bot.query_with_rag(&collection_name, &args.join(" "))?;
+        let user_message = bot.generate_rag_query(&collection_name, &args.join(" "))?;
         bot.push_message(user_message);
 
         let sys_prompt: String = crate::common::config
             ::get_config("bot_config.json", "base_sys_prompt")?;
-        let client = bot.get_chat_client();
-        let response = client.call_model(&bot.get_messages(), &sys_prompt, 0.75)?;
+        let response = bot.query_llm(&bot.get_messages(), &sys_prompt, 0.75)?;
 
         let agent_message = MessageBuilder::default()
             .role(Role::Assistant)

@@ -1,6 +1,5 @@
-use anthropic::{client::{Client, ClientBuilder}, types::{Message, MessagesRequest, MessagesRequestBuilder, MessagesResponse}};
+use anthropic::{client::{Client, ClientBuilder}, types::{Message, MessagesRequestBuilder, MessagesResponse}};
 use directories::ProjectDirs;
-use tokio;
 use dotenvy;
 
 #[derive(Debug)]
@@ -41,7 +40,7 @@ impl AnthropicClient {
     }
 
     /// Sends a list of messages, system prompt, and randomness (temperature) to the LLM and returns the response
-    pub fn call_model(&self, messages: &Vec<Message>, sys_prompt: &str, randomness: f64) -> Result<MessagesResponse,Box<dyn std::error::Error>> {
+    pub async fn call_model(&self, messages: &Vec<Message>, sys_prompt: &str, randomness: f64) -> Result<MessagesResponse,Box<dyn std::error::Error>> {
         let request = MessagesRequestBuilder::default()
             .model(&self.model)
             .max_tokens(self.max_tokens)
@@ -49,19 +48,6 @@ impl AnthropicClient {
             .messages(&messages[..])
             .system(sys_prompt)
             .build()?;
-        let response = self.send_request(request)?;
-        Ok(response)
-    }
-
-    // private
-
-    fn send_request(&self, request: MessagesRequest) -> Result<MessagesResponse, Box<dyn std::error::Error>> {
-        let response = tokio::runtime::Runtime::new()?
-            .block_on(self.send_request_async(request))?;
-        Ok(response)
-    }
-
-    async fn send_request_async(&self, request: MessagesRequest) -> Result<MessagesResponse, Box<dyn std::error::Error>> {
         let response = self.client.messages(request).await?;
         Ok(response)
     }

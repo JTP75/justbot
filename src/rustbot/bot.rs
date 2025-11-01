@@ -1,7 +1,7 @@
 use std::{env, fs};
 use std::path::{Path, PathBuf};
 
-use anthropic::types::{ContentBlock, Message, MessageBuilder, Role};
+use anthropic::types::{ContentBlock, Message, MessageBuilder, MessagesResponse, Role};
 use chrono::{self, Local};
 
 use crate::commands::{Command, REGISTRY};
@@ -132,24 +132,6 @@ impl RustBot {
     /// ```
     pub fn get_motd(&self) -> (chrono::NaiveDate, Option<String>) { self.motd.clone() }
 
-    /// Get a reference to the LLM chat client (anthropic in this case)
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// let anthropic_client = bot.get_chat_client();
-    /// ```
-    pub fn get_chat_client(&self) -> &AnthropicClient { &self.client_mgr.chat_client }
-
-    /// Get a reference to the vector database client (Qdrant in this case)
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// let vdb_client = bot._get_vdb_client();
-    /// ```
-    pub fn _get_vdb_client(&self) -> &QdrantClient { &self.client_mgr.vdb_client }
-
     /// Return a copy of the currently selected collection for storage/retrieval
     /// 
     /// # Examples
@@ -209,6 +191,25 @@ impl RustBot {
         Ok(())
     }
 
+    /// (Synchronous callback for `ClientManager::call_model_callback()`)
+    /// 
+    /// Sends a list of messages to claude and awaits a response (blocking)
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// let ans = bot.query_llm(conversation, "You are a chatbot. Be nice!", 0.33)
+    /// assert!(ans.is_ok());
+    /// 
+    /// println!("{:?}", ans.unwrap());
+    /// // MessagesResponse(... content="Hello how are you?")
+    /// ```
+    pub fn query_llm(&self, messages: &Vec<Message>, sys_prompt: &str, randomness: f64) 
+    -> Result<MessagesResponse,Box<dyn std::error::Error>> {
+        tokio::runtime::Runtime::new()?
+            .block_on(self.client_mgr.call_model_callback(messages, sys_prompt, randomness))
+    }
+
     /// Generate an anthropic message with rag
     /// 
     /// The resulting Message struct has two content blocks:
@@ -218,11 +219,19 @@ impl RustBot {
     /// # Examples
     /// 
     /// ```
-    /// let user_message: Message = bot.query_with_rag("programming_project_docs", "tell me about the programming project")?;
+    /// let user_message = bot.query_with_rag(
+    ///     "programming_project_docs", 
+    ///     "tell me about the programming project"
+    /// )?;
     /// 
-    /// // user_message can be pushed to the bot and sent to the anthropic client
+    /// // add user message to convo
+    /// bot.push_message(user_message);
+    /// 
+    /// // call llm separately
+    /// let ans = bot.query_llm(bot.get_messages(), "You are retrieving documents, say some technical stuff")
+    /// // ...
     /// ```
-    pub fn query_with_rag(&self, collection_name: &str, query: &str)
+    pub fn generate_rag_query(&self, collection_name: &str, query: &str)
     -> Result<Message, Box<dyn std::error::Error>> {
 
         let runtime = tokio::runtime::Runtime::new()?;
@@ -395,15 +404,30 @@ impl RustBot {
 
         Ok(( command, args ))
     }
+
+    fn _get_chat_client(&self) -> &AnthropicClient { &self.client_mgr.chat_client }
+    fn _get_vdb_client(&self) -> &QdrantClient { &self.client_mgr.vdb_client }
+    fn _get_mbed_client(&self) -> &VoyageClient { &self.client_mgr.embedding_client }
 }
 
 impl ClientManager {
+
+    // callbacks
+
+    /// callback for `AnthropicClient::call_model`
+    pub async fn call_model_callback(&self, messages: &Vec<Message>, sys_prompt: &str, randomness: f64) 
+    -> Result<MessagesResponse,Box<dyn std::error::Error>> {
+        self.chat_client.call_model(messages, sys_prompt, randomness).await
+    }
+
+    // routines
     
     /// Gets the embedding for a file and stores to the Vector DB
     /// 
     /// - assumes `file_path` is valid
     /// - attempts to convert pdfs to text
-    pub async fn embed_file(&self, collection_name: &str, file_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn embed_file(&self, collection_name: &str, file_path: PathBuf) 
+    -> Result<(), Box<dyn std::error::Error>> {
         let path_str = match file_path.to_str() {
             Some(s) => s,
             None => { return Err(format!("Error converting path <{}> to &str", file_path.display()).into()) }
@@ -417,8 +441,6 @@ impl ClientManager {
 
         // embed content and path
         //      fixme theres a better way to group embeddings...
-        // let json_data = serde_json::json!({"file_path": path_str, "content": content});
-        // let text_data = json_data.as_str().ok_or("failed to generate json string")?;
         let text_data = format!("{{\"file_path\": \"{}\", \"content\": \"{}\"}}", path_str, content);
         let embedding = self.embedding_client.get_embedding(&text_data, "document").await?;
 
@@ -433,7 +455,8 @@ impl ClientManager {
     /// - returns json result containing a list of the top `n` relevant files
     ///     - where `n` is the search_limit set in vectordb_config.json
     /// - each entry contains the file path, file contents, and search score value
-    pub async fn query_vdb(&self, collection_name: &str, query: &str) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    pub async fn query_vdb(&self, collection_name: &str, query: &str) 
+    -> Result<serde_json::Value, Box<dyn std::error::Error>> {
 
         // vectorize query
         let qvec = self.embedding_client.get_embedding(query, "query").await?;
