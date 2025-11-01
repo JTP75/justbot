@@ -16,6 +16,7 @@ todo install instructions
 
 ### BACKLOG
 
+- separate into frontend and backend processes
 - implement chunking
 - store multiple files at once (command)
 - setup script
@@ -27,6 +28,7 @@ todo install instructions
 
 ### READY
 
+- documentation
 - update this file
 
 ### IN PROGRESS
@@ -40,6 +42,7 @@ todo install instructions
 
 ### DONE
 
+- change location of docker-compose
 - add qdrant docker-compose to startup
 - startup
 - motd is broken
