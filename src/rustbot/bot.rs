@@ -185,7 +185,7 @@ impl RustBot {
     /// ```
     /// bot.store_file("512_test_collection", "path/to/some/file.md")
     /// ```
-    pub fn store_file(&self, collection_name: &str, path: PathBuf) -> Result<(),Box<dyn std::error::Error>> {
+    pub fn store_file(&self, collection_name: &str, path: &Path) -> Result<(),Box<dyn std::error::Error>> {
         tokio::runtime::Runtime::new()?
             .block_on(self.client_mgr.embed_file(collection_name, path))?;
         Ok(())
@@ -426,13 +426,13 @@ impl ClientManager {
     /// 
     /// - assumes `file_path` is valid
     /// - attempts to convert pdfs to text
-    pub async fn embed_file(&self, collection_name: &str, file_path: PathBuf) 
+    pub async fn embed_file(&self, collection_name: &str, file_path: &Path) 
     -> Result<(), Box<dyn std::error::Error>> {
         let path_str = match file_path.to_str() {
             Some(s) => s,
             None => { return Err(format!("Error converting path <{}> to &str", file_path.display()).into()) }
         };
-        let content = match file_path.extension().unwrap().to_str() {
+        let content = match file_path.extension().and_then(|ext| ext.to_str())  {
             Some("pdf") => crate::common::pdf
                 ::extract_pdf_text(&file_path)?,
             _ => fs::read_to_string(&file_path)
@@ -502,7 +502,7 @@ mod tests {
         let _result = bot._get_vdb_client().add_collection(coll_name).await;
         // assert!(result.is_ok(), "{}", result.unwrap_err());
 
-        let result = bot.client_mgr.embed_file(coll_name, path).await;
+        let result = bot.client_mgr.embed_file(coll_name, &path).await;
         assert!(result.is_ok(), "{}", result.unwrap_err())
     }
 }

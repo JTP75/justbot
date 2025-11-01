@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 
 use crate::rustbot::{bot::RustBot, session::SessionManager};
 
@@ -30,17 +30,42 @@ impl Command for StoreCommand {
             // TLDR: MAKE THIS KILLABLE
             //
             // should probably implement a function in bot.rs like "store_files" or "store_bulk"
+            //
+            // current solution is to have this be non recursive
             log::info!("This is a directory. {:?}", path);
 
-            // let files = std::fs::read_dir(path).map(|child_path| );
+            let paths = fs::read_dir(path)?
+                .filter_map(|rslt| rslt.ok())
+                .map(|dir_entry| dir_entry.path())
+                .filter(|path| path.is_file())
+                .filter(|path| 
+                    path.extension().and_then(|ext| ext.to_str()) == Some("pdf") ||
+                    String::from_utf8(fs::read(path).unwrap_or("".into())).is_ok()
+                )
+                .collect::<Vec<_>>();
 
-            Err("store is not implemented for directories yet".into())
-            // Ok(Some(format!("Successfully stored all files to collection: {}.", collection_name)))
+            log::info!(
+                "Files:\n\t{}", 
+                paths.iter().map(|p| p.to_str().unwrap())
+                    .collect::<Vec<_>>()
+                    .join("\n\t")
+            );
+
+            // Ok(Some(format!(
+            //     "Successfully stored the files to collection: {}.\n\t{}", 
+            //     collection_name,
+            //     paths.iter.map().join("\n\t")
+            // )))
+            Err("Not implemented for directories".into())
         } else if path.is_file() {
             let path = bot.resolve_file_path_str(path_str)?;
             log::info!("This is a file. {:?}", path);
-            bot.store_file(&collection_name, path)?;
-            Ok(Some(format!("Successfully stored file to collection: {}.", collection_name)))
+            bot.store_file(&collection_name, &path)?;
+            Ok(Some(format!(
+                "Successfully stored file to collection: {}.\n\t{}", 
+                collection_name, 
+                path.display()
+            )))
         } else {
             Err("Canonicalized path is not valid".into())
         }
