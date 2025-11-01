@@ -150,7 +150,19 @@ impl RustBot {
     /// ```
     pub fn _get_vdb_client(&self) -> &QdrantClient { &self.client_mgr.vdb_client }
 
-    /// todo write desc
+    /// Return a copy of the currently selected collection for storage/retrieval
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// assert!(bot.get_collection().is_some());
+    /// ```
+    /// 
+    /// If no collection is selected
+    /// ```
+    /// let bot = RustBot::new();
+    /// assert!(bot.get_collection().is_none());
+    /// ```
     pub fn get_current_collection(&self) -> Option<String> { self.collection.clone() }
 
     /// Get a list of all collections
@@ -197,7 +209,19 @@ impl RustBot {
         Ok(())
     }
 
-    /// todo write desc
+    /// Generate an anthropic message with rag
+    /// 
+    /// The resulting Message struct has two content blocks:
+    /// - `content[0]` contains the user's query
+    /// - `content[1]` is a json-formatted list of relevant documents
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// let user_message: Message = bot.query_with_rag("programming_project_docs", "tell me about the programming project")?;
+    /// 
+    /// // user_message can be pushed to the bot and sent to the anthropic client
+    /// ```
     pub fn query_with_rag(&self, collection_name: &str, query: &str)
     -> Result<Message, Box<dyn std::error::Error>> {
 
@@ -217,22 +241,49 @@ impl RustBot {
         Ok(message)
     }
     
-    /// todo write desc
+    /// Sets the topic field
     pub fn set_topic(&mut self, topic: impl Into<String>) -> () { self.topic = topic.into() }   
     
-    /// todo write desc 
+    /// Overwrite the current conversation with a new conversation
     pub fn set_messages(&mut self, messages: Vec<Message>) -> () { self.messages = messages }    
     
-    /// todo write desc
+    /// Set the message of the day field
+    /// 
+    /// - expects a NaiveData and Option<String> tuple
     pub fn set_motd(&mut self, motd: (chrono::NaiveDate, Option<String>)) -> () { self.motd = motd }
 
-    /// todo write desc
+    /// Set the currently selected VectorDB collection
     pub fn set_current_collection(&mut self, collection: Option<String>) -> () { self.collection = collection }
 
-    /// todo write desc
+    /// Push a `anthropic::types::Message` to the end of the messages Vec
     pub fn push_message(&mut self, message: Message) -> () { self.messages.push(message) }
     
-    /// todo write desc
+    /// Handle any valid input command end-to-end
+    /// 
+    /// - pipelining process occurs in this function
+    /// 
+    /// # Examples
+    /// 
+    /// ## Simple
+    /// ```
+    /// let mut bot = RustBot::new("pluh");
+    /// let mut sm = SessionManager::new();
+    /// 
+    /// let response = bot.handle_command(&mut sm, "hello").unwrap();
+    /// 
+    /// assert_eq!(response, Some(String::from("Hello there! My name is pluh.")));
+    /// ```
+    /// 
+    /// ## With Pipelining
+    /// ```
+    /// let mut bot = RustBot::new("pluh");
+    /// let mut sm = SessionManager::new();
+    /// 
+    /// let response = bot.handle_command(&mut sm, "hello > ./response.txt").unwrap();
+    /// // result will be printed to stdout and saved to response.txt
+    /// 
+    /// assert_eq!(response, Some(String::from("Hello there! My name is pluh.")));
+    /// ```
     pub fn handle_command(&mut self, sm: &mut SessionManager, input: &str) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let (command,args) = self.parse_command(input)?;
         let output = command.exec(sm, self, &args);
@@ -242,11 +293,11 @@ impl RustBot {
             {
                 log::info!("Pipelining output...");
 
-                // Check if filename argument exists
+                // check if filename argument exists
                 let filename = args.get(i + 1)
                     .ok_or("Missing filename after '>'")?;
 
-                match self.validate_filename(&filename) {
+                match self.resolve_file_path_str(&filename) {
                     Ok(canonical_path) => {
                         fs::write(&canonical_path, response)?;
                         log::info!("Pipeline output success!")
@@ -259,20 +310,57 @@ impl RustBot {
         output
     }
 
-    /// todo write desc
-    pub fn validate_filename(&self, filename: &str) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
-        if filename.trim().is_empty() {
-            return Err("Filename cannot be empty".into());
+    /// Validates a file path string for writing, then returns fully resolved absolute path
+    /// 
+    /// - The file does not need to exist, but its parent directories must exist
+    /// 
+    /// Checks:
+    /// - `path_str` is not empty
+    /// - `path_str` contains only valid chars
+    ///     - `invalid_chars = ['<', '>', ':', '"', '|', '?', '*', '\0']`
+    /// - `path_str` parent directory exists in the file system
+    ///     - passes if parent directory is root
+    ///     - passes if no parent directory is specified (relative path)
+    /// - `path_str` is a file, not a directory
+    /// 
+    /// # Examples
+    /// ```
+    /// let bot = RustBot::new("notrustbot");
+    /// 
+    /// // good absolute path
+    /// let rslt = bot.resolve_file_path("/home/pacel/something.txt");
+    /// assert!(rslt.is_ok());
+    /// 
+    /// // good relative path
+    /// let rslt = bot.resolve_file_path("something.txt");
+    /// assert!(rslt.is_ok());
+    /// 
+    /// // bad file name
+    /// let rslt = bot.resolve_file_path("/home/pacel/something_bad<<<.txt");
+    /// assert!(rslt.is_err());
+    /// 
+    /// // parent dir doesnt exist
+    /// let rslt = bot.resolve_file_path("/home/pacel/this_dir_doesnt_exist/something.txt");
+    /// assert!(rslt.is_err());
+    /// 
+    /// // not a file
+    /// let rslt = bot.resolve_file_path("/home/pacel/this_is_dir_not_a_file");
+    /// assert!(rslt.is_err());
+    /// ```
+    pub fn resolve_file_path_str(&self, path_str: &str) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
+        if path_str.trim().is_empty() {
+            return Err("path_str cannot be empty".into());
         }
 
         let invalid_chars = ['<', '>', ':', '"', '|', '?', '*', '\0'];
-        if filename.chars().any(|c| invalid_chars.contains(&c)) {
-            return Err(format!("Filename contains invalid characters: {}", filename).into());
+        if path_str.chars().any(|c| invalid_chars.contains(&c)) {
+            return Err(format!("path_str contains invalid characters: {}", path_str).into());
         }
 
-        let path = Path::new(filename);
+        let path = Path::new(path_str);
         
-        let canonical = if let Some(parent) = path.parent() {
+        let canonical = 
+        if let Some(parent) = path.parent() {
             if !parent.as_os_str().is_empty() {
 
                 let canonical_parent = parent.canonicalize()
@@ -281,7 +369,7 @@ impl RustBot {
                 if let Some(file_name) = path.file_name() {
                     canonical_parent.join(file_name)
                 } else {
-                    return Err("Invalid filename".into());
+                    return Err("path_str is not a valid file".into());
                 }
             } else {
                 std::env::current_dir()?.join(path)
@@ -295,7 +383,6 @@ impl RustBot {
 
     // private
 
-    /// todo write desc
     fn parse_command(&self, input: &str) -> Result<(Box<dyn Command>, Vec<String>), Box<dyn std::error::Error>> {
         let tokenized: Vec<&str> =  input.split_whitespace().collect();
         let command_name = tokenized.first().ok_or("User input empty")?;
@@ -312,17 +399,20 @@ impl RustBot {
 
 impl ClientManager {
     
-    /// todo write desc
-    pub async fn embed_file(&self, collection_name: &str, path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
-        let path_str = match path.to_str() {
+    /// Gets the embedding for a file and stores to the Vector DB
+    /// 
+    /// - assumes `file_path` is valid
+    /// - attempts to convert pdfs to text
+    pub async fn embed_file(&self, collection_name: &str, file_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+        let path_str = match file_path.to_str() {
             Some(s) => s,
-            None => { return Err(format!("Error converting path <{}> to &str", path.display()).into()) }
+            None => { return Err(format!("Error converting path <{}> to &str", file_path.display()).into()) }
         };
-        let content = match path.extension().unwrap().to_str() {
+        let content = match file_path.extension().unwrap().to_str() {
             Some("pdf") => crate::common::pdf
-                ::extract_pdf_text(&path)?,
-            _ => fs::read_to_string(&path)
-                .map_err(|_| format!("File at {} is not valid UTF-8", path.display()))?
+                ::extract_pdf_text(&file_path)?,
+            _ => fs::read_to_string(&file_path)
+                .map_err(|_| format!("Failed to read file {}", file_path.display()))?
         };
 
         // embed content and path
@@ -332,14 +422,17 @@ impl ClientManager {
         let text_data = format!("{{\"file_path\": \"{}\", \"content\": \"{}\"}}", path_str, content);
         let embedding = self.embedding_client.get_embedding(&text_data, "document").await?;
 
-        // store content to
+        // store content to vdb
         self.vdb_client.insert_to_collection(collection_name, embedding, path_str, &content).await?;
 
         Ok(())
     }
     
-    
-    /// todo write desc
+    /// Searches the Vector DB with the user's query
+    /// 
+    /// - returns json result containing a list of the top `n` relevant files
+    ///     - where `n` is the search_limit set in vectordb_config.json
+    /// - each entry contains the file path, file contents, and search score value
     pub async fn query_vdb(&self, collection_name: &str, query: &str) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
 
         // vectorize query

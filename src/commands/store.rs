@@ -37,7 +37,7 @@ impl Command for StoreCommand {
             Err("store is not implemented for directories yet".into())
             // Ok(Some(format!("Successfully stored all files to collection: {}.", collection_name)))
         } else if path.is_file() {
-            let path = bot.validate_filename(path_str)?;
+            let path = bot.resolve_file_path_str(path_str)?;
             log::info!("This is a file. {:?}", path);
             bot.store_file(&collection_name, path)?;
             Ok(Some(format!("Successfully stored file to collection: {}.", collection_name)))
