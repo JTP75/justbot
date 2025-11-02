@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::fs;
 
 use crate::rustbot::{bot::RustBot, session::SessionManager};
 
@@ -19,19 +19,11 @@ impl Command for StoreCommand {
         };
         let default_path = ".".to_string(); 
         let path_str = args.first().unwrap_or(&default_path);
-        let path = PathBuf::from(path_str).canonicalize()?;
+        let path = bot.resolve_file_path_str(path_str)?;
 
         bot.add_collection(&collection_name).unwrap_or(()); // ignore errors
 
         if path.is_dir() {
-            // THIS MIGHT TAKE A LONG TIME WITHOUT CHUNKED CALLS, DONT IMPLEMENT YET
-            // ALSO NEED TO CHECK TO MAKE SURE THIS ISNT RUNNING IN LARGE DIRECTORIES (i.e "/")
-            // 
-            // TLDR: MAKE THIS KILLABLE
-            //
-            // should probably implement a function in bot.rs like "store_files" or "store_bulk"
-            //
-            // current solution is to have this be non recursive
             log::info!("This is a directory. {:?}", path);
 
             let paths = fs::read_dir(path)?
@@ -58,9 +50,10 @@ impl Command for StoreCommand {
                 paths_disp
             )))
         } else if path.is_file() {
-            let path = bot.resolve_file_path_str(path_str)?;
             log::info!("This is a file. {:?}", path);
+
             bot.store_file(&collection_name, &path)?;
+
             Ok(Some(format!(
                 "Successfully stored file to collection: {}.\n\t{}", 
                 collection_name, 
