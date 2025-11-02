@@ -543,6 +543,8 @@ impl ClientManager {
 mod tests {
     use directories::ProjectDirs;
 
+    use crate::common::config::{APPLICATION, ORGANIZATION, QUALIFIER};
+
     use super::*;
 
     #[tokio::test]
@@ -550,7 +552,7 @@ mod tests {
         let bot = RustBot::new("testbot");
         let coll_name = "test_collection_botrs";
 
-        let project_dirs = ProjectDirs::from("com", "Justin Inc.", "rustbot").unwrap();
+        let project_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
 #[allow(unused)]
         let path = project_dirs.cache_dir().join("tmp.md");
 

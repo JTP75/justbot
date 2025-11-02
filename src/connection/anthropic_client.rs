@@ -2,6 +2,8 @@ use anthropic::{client::{Client, ClientBuilder}, types::{Message, MessagesReques
 use directories::ProjectDirs;
 use dotenvy;
 
+use crate::common::config::{APPLICATION, ORGANIZATION, QUALIFIER};
+
 #[derive(Debug)]
 pub struct AnthropicClient {
     client: Client,
@@ -20,7 +22,7 @@ impl AnthropicClient {
 
     /// Create a new `AnthropicClient` instance
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let project_dirs = ProjectDirs::from("com", "Justin Inc.", "rustbot").unwrap();
+        let project_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
         let env_path = project_dirs.config_dir().join(".env");
         dotenvy::from_path(env_path).ok();
 

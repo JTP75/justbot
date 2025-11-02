@@ -4,7 +4,7 @@ use anthropic::types::{ContentBlock, Message, MessageBuilder, Role};
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 
-use crate::rustbot::bot::RustBot;
+use crate::{common::config::{APPLICATION, ORGANIZATION, QUALIFIER}, rustbot::bot::RustBot};
 
 /// Serializable struct that can be saved to a json file
 /// 
@@ -29,7 +29,7 @@ impl SessionManager {
     /// 
     /// - technically might panic, but almost certainly not
     pub fn new() -> Self {
-        let project_dirs = ProjectDirs::from("com", "Justin Inc.", "rustbot").unwrap();
+        let project_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
         SessionManager { 
             data_dir: project_dirs.data_dir().join(""),
             save_dir: project_dirs.data_dir().join("sessions/"),

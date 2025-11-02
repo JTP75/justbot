@@ -21,11 +21,13 @@ impl Command for StoreCommand {
         let path_str = args.first().unwrap_or(&default_path);
         let path = bot.resolve_file_path_str(path_str)?;
 
-        bot.add_collection(&collection_name).unwrap_or(()); // ignore errors
+        // try to add collection (if it already exists, ignore error)
+        bot.add_collection(&collection_name).unwrap_or(());
 
         if path.is_dir() {
             log::info!("This is a directory. {:?}", path);
 
+            // get list of files in directory
             let paths = fs::read_dir(path)?
                 .filter_map(|rslt| rslt.ok())
                 .map(|dir_entry| dir_entry.path())
@@ -42,6 +44,7 @@ impl Command for StoreCommand {
                     .join("\n\t");
             log::info!("Files:\n\t{}", paths_disp);
 
+            // store files
             bot.store_files(&collection_name, paths.iter().map(|path| path.as_path()).collect())?;
 
             Ok(Some(format!(
@@ -52,6 +55,7 @@ impl Command for StoreCommand {
         } else if path.is_file() {
             log::info!("This is a file. {:?}", path);
 
+            // store file
             bot.store_file(&collection_name, &path)?;
 
             Ok(Some(format!(

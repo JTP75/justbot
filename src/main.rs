@@ -8,7 +8,7 @@ use std::process::Command;
 use directories::ProjectDirs;
 use rustyline::{self,error::ReadlineError};
 
-use crate::{rustbot::{bot::RustBot, session::SessionManager}};
+use crate::{common::config::{APPLICATION, ORGANIZATION, QUALIFIER}, rustbot::{bot::RustBot, session::SessionManager}};
 
 /// callback for handling bot commands
 fn handle_bot_command(sm: &mut SessionManager, bot: &mut RustBot, input: &str) -> Option<String> {
@@ -25,7 +25,7 @@ fn handle_bot_command(sm: &mut SessionManager, bot: &mut RustBot, input: &str) -
 fn startup() -> Result<(),Box<dyn std::error::Error>> {
     log::info!("Entering startup...");
 
-    let p_dirs = ProjectDirs::from("com", "Justin Inc.", "rustbot").unwrap();
+    let p_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
     let compose_file = p_dirs.config_dir().join("docker-compose.yml");
     let output = Command::new("docker-compose")
         .arg("-f")
@@ -50,7 +50,7 @@ fn startup() -> Result<(),Box<dyn std::error::Error>> {
 fn shutdown() -> Result<(),Box<dyn std::error::Error>> {
     log::info!("Entering shutdown...");
 
-    let p_dirs = ProjectDirs::from("com", "Justin Inc.", "rustbot").unwrap();
+    let p_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
     let compose_file = p_dirs.config_dir().join("docker-compose.yml");
     let output = Command::new("docker-compose")
         .arg("-f")

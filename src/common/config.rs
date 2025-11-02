@@ -2,6 +2,10 @@ use std::{collections::HashMap, fs};
 
 use directories::ProjectDirs;
 
+pub const QUALIFIER: &str = "com";
+pub const ORGANIZATION: &str = "The justbot Company";
+pub const APPLICATION: &str = "rustbot";
+
 /// Retrieves config value given a filename and key
 /// 
 /// - assumes that all config files are stored in `ProjectDirs::config_dir()`
@@ -11,7 +15,7 @@ pub fn get_config<T>(filename: &str, key: &str) -> Result<T,Box<dyn std::error::
         T: std::str::FromStr, 
         T::Err: std::error::Error + 'static 
 {
-    let project_dirs = ProjectDirs::from("com", "Justin Inc.", "rustbot").unwrap();
+    let project_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
     let path = project_dirs.config_dir().join(filename);
     let json = fs::read_to_string(&path)?;
     let map: HashMap<String, serde_json::Value> = serde_json::from_str(&json)?;
