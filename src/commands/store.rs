@@ -44,19 +44,19 @@ impl Command for StoreCommand {
                 )
                 .collect::<Vec<_>>();
 
-            log::info!(
-                "Files:\n\t{}", 
+            let paths_disp = 
                 paths.iter().map(|p| p.to_str().unwrap())
                     .collect::<Vec<_>>()
-                    .join("\n\t")
-            );
+                    .join("\n\t");
+            log::info!("Files:\n\t{}", paths_disp);
 
-            // Ok(Some(format!(
-            //     "Successfully stored the files to collection: {}.\n\t{}", 
-            //     collection_name,
-            //     paths.iter.map().join("\n\t")
-            // )))
-            Err("Not implemented for directories".into())
+            bot.store_files(&collection_name, paths.iter().map(|path| path.as_path()).collect())?;
+
+            Ok(Some(format!(
+                "Successfully stored the files to collection: {}.\n\t{}", 
+                collection_name,
+                paths_disp
+            )))
         } else if path.is_file() {
             let path = bot.resolve_file_path_str(path_str)?;
             log::info!("This is a file. {:?}", path);

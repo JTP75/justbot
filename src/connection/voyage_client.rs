@@ -51,8 +51,40 @@ impl VoyageClient {
 
         let result = response["data"][0]["embedding"].as_array();
         match result {
-            Some(arr) => Ok(arr.iter().map(|v| v.as_f64().unwrap() as f32).collect()),
+            Some(arr) => Ok(arr.iter().map(|v| v.as_f64().unwrap_or(0.0) as f32).collect()),
             None => Err("Embedding is null, voyage api request probably failed".into())
+        }
+    }
+
+    pub async fn get_embeddings(&self, texts: Vec<&str>, input_type: &str) -> Result<Vec<Vec<f32>>, Box<dyn std::error::Error>> {
+        let response = self.client
+            .post(&self.url)
+            .header("Authorization", format!("Bearer {}", self.api_key))
+            .json(&serde_json::json!({
+                "input": texts,
+                "model": self.model,
+                "input_type": input_type,
+            }))
+            .send().await?
+            .json::<serde_json::Value>().await?;
+
+        let data = response["data"].as_array()
+            .ok_or("Null response from voyage api")?;
+
+        let mut embeddings: Vec<Vec<f32>> = Vec::new();
+        for value in data.iter() {
+            let embedding = value["embedding"].as_array()
+                .ok_or("Missing embedding in response")?
+                .iter()
+                .map(|v| v.as_f64().unwrap_or(0.0) as f32)
+                .collect();
+            embeddings.push(embedding)
+        }
+
+        if texts.len()==embeddings.len() {
+            Ok(embeddings)
+        } else {
+            Err("Embeddings missing from response".into())
         }
     }
 }

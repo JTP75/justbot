@@ -191,6 +191,23 @@ impl RustBot {
         Ok(())
     }
 
+    /// Store multiple files to locally hosted vector database
+    /// 
+    /// - collection_name must match the name of a valid collection
+    /// - paths is a slice of Path references
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// let paths = vec![Path::new("file1.txt"), Path::new("file2.txt")];
+    /// bot.store_files("512_test_collection", &paths);
+    /// ```
+    pub fn store_files(&self, collection_name: &str, paths: Vec<&Path>) -> Result<(),Box<dyn std::error::Error>> {
+        tokio::runtime::Runtime::new()?
+            .block_on(self.client_mgr.embed_files(collection_name, paths))?;
+        Ok(())
+    }
+
     /// (Synchronous callback for `ClientManager::call_model_callback()`)
     /// 
     /// Sends a list of messages to claude and awaits a response (blocking)
@@ -446,6 +463,47 @@ impl ClientManager {
 
         // store content to vdb
         self.vdb_client.insert_to_collection(collection_name, embedding, path_str, &content).await?;
+
+        Ok(())
+    }
+
+    pub async fn embed_files(&self, collection_name: &str, file_paths: Vec<&Path>) 
+    -> Result<(), Box<dyn std::error::Error>> {
+
+        let mut texts = Vec::new();
+        let mut contents = Vec::new();
+
+        for file_path in file_paths.iter() {
+            let path_str = match file_path.to_str() {
+                Some(s) => s,
+                None => { return Err(format!("Error converting path <{}> to &str", file_path.display()).into()) }
+            };
+            let content = match file_path.extension().and_then(|ext| ext.to_str())  {
+                Some("pdf") => crate::common::pdf
+                    ::extract_pdf_text(&file_path)?,
+                _ => fs::read_to_string(&file_path)
+                    .map_err(|_| format!("Failed to read file {}", file_path.display()))?
+            };
+            let text_data = format!("{{\"file_path\": \"{}\", \"content\": \"{}\"}}", path_str, content);
+
+            contents.push(content.clone());
+            texts.push(text_data);
+        }
+
+        let texts: Vec<&str> = texts.iter().map(|s| s.as_str()).collect();
+        let contents: Vec<&str> = contents.iter().map(|s| s.as_str()).collect();
+        let file_paths: Vec<&str> = file_paths.iter()
+            .map(|p| p.to_str().unwrap_or(""))
+            .collect();
+
+        let embeddings = self.embedding_client.get_embeddings(texts, "document").await?;
+
+        self.vdb_client.insert_multiple_to_collection(
+            collection_name, 
+            embeddings, 
+            file_paths, 
+            contents
+        ).await?;
 
         Ok(())
     }

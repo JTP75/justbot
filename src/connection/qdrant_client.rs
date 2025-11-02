@@ -88,11 +88,31 @@ impl QdrantClient {
         Ok(id)
     }
 
-    #[allow(unused)]
     pub async fn insert_multiple_to_collection(&self, collection_name: &str, 
-        vector: Vec<Vec<f32>>, file_paths: Vec<&str>, contents: Vec<&str>)
-    -> Result<Vec<String>, Box<dyn std::error::Error>> {
-        Err("Not implemented".into())
+        vectors: Vec<Vec<f32>>, file_paths: Vec<&str>, contents: Vec<&str>)
+    -> Result<Vec<u64>, Box<dyn std::error::Error>> {
+        
+        let mut points = Vec::new();
+        let mut ids = Vec::new();
+
+        for (i,vector) in vectors.into_iter().enumerate() {
+            let payload: Payload = serde_json::json!({
+                "file_path": file_paths[i],
+                "content": contents[i],
+            }).try_into()?;
+
+            let mut hasher = DefaultHasher::new();
+            hasher.write(file_paths[i].as_bytes());
+            let id = hasher.finish();
+
+            points.push(PointStruct::new(id.clone(), vector, payload));
+            ids.push(id);
+        }
+
+        let req = UpsertPointsBuilder::new(collection_name, points);
+        self.client.upsert_points(req).await?;
+        
+        Ok(ids)
     }
 
     // todo add a separate insert fn for large vector sets
