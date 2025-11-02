@@ -1,7 +1,8 @@
-use anthropic::{client::{Client, ClientBuilder}, types::{Message, MessagesRequest, MessagesRequestBuilder, MessagesResponse}};
+use anthropic::{client::{Client, ClientBuilder}, types::{Message, MessagesRequestBuilder, MessagesResponse}};
 use directories::ProjectDirs;
-use tokio;
 use dotenvy;
+
+use crate::common::config::{APPLICATION, ORGANIZATION, QUALIFIER};
 
 #[derive(Debug)]
 pub struct AnthropicClient {
@@ -19,8 +20,9 @@ impl AnthropicClient {
 
     // public
 
+    /// Create a new `AnthropicClient` instance
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let project_dirs = ProjectDirs::from("com", "Justin Inc.", "rustbot").unwrap();
+        let project_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
         let env_path = project_dirs.config_dir().join(".env");
         dotenvy::from_path(env_path).ok();
 
@@ -39,7 +41,8 @@ impl AnthropicClient {
         })
     }
 
-    pub fn send_message(&self, messages: &Vec<Message>, sys_prompt: &str, randomness: f64) -> Result<MessagesResponse,Box<dyn std::error::Error>> {
+    /// Sends a list of messages, system prompt, and randomness (temperature) to the LLM and returns the response
+    pub async fn call_model(&self, messages: &Vec<Message>, sys_prompt: &str, randomness: f64) -> Result<MessagesResponse,Box<dyn std::error::Error>> {
         let request = MessagesRequestBuilder::default()
             .model(&self.model)
             .max_tokens(self.max_tokens)
@@ -47,19 +50,6 @@ impl AnthropicClient {
             .messages(&messages[..])
             .system(sys_prompt)
             .build()?;
-        let response = self.call_api(request)?;
-        Ok(response)
-    }
-
-    // private
-
-    fn call_api(&self, request: MessagesRequest) -> Result<MessagesResponse, Box<dyn std::error::Error>> {
-        let response = tokio::runtime::Runtime::new()?
-            .block_on(self.call_api_future(request))?;
-        Ok(response)
-    }
-
-    async fn call_api_future(&self, request: MessagesRequest) -> Result<MessagesResponse, Box<dyn std::error::Error>> {
         let response = self.client.messages(request).await?;
         Ok(response)
     }

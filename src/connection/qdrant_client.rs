@@ -1,11 +1,12 @@
-#![allow(unused)]
+// #![allow(unused)]
+
+use std::hash::{DefaultHasher, Hasher};
 
 use qdrant_client::{
     Payload, Qdrant, qdrant::{
         CreateCollection, Distance, PointStruct, ScoredPoint, SearchPoints, UpsertPointsBuilder, VectorParams, VectorsConfig, vectors_config
     }
 };
-use uuid::Uuid;
 
 pub struct QdrantClient {
     client: Qdrant,
@@ -22,6 +23,8 @@ impl std::fmt::Debug for QdrantClient {
 }
 
 impl QdrantClient {
+
+    /// Create a new gRPC `QdrantClient` instance 
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         let host: String = crate::common::config
             ::get_config("vectordb_config.json", "host")?;
@@ -35,6 +38,7 @@ impl QdrantClient {
         })
     }
 
+    /// Create a new collection in the VectorDB
     pub async fn add_collection(&self, collection_name: &str) 
     -> Result<(), Box<dyn std::error::Error>> {
         let req = CreateCollection {
@@ -53,6 +57,7 @@ impl QdrantClient {
         Ok(())
     }
 
+    /// List all available collections in the Vector DB
     pub async fn list_collections(&self)
     -> Result<Vec<String>, Box<dyn std::error::Error>> {
         let collections = self.client.list_collections().await?;
@@ -62,15 +67,19 @@ impl QdrantClient {
         Ok(list)
     }
 
+    /// Insert one vector to a collection in the Vector DB
     pub async fn insert_to_collection(&self, collection_name: &str, 
         vector: Vec<f32>, file_path: &str, content: &str)
-    -> Result<String, Box<dyn std::error::Error>> {
+    -> Result<u64, Box<dyn std::error::Error>> {
         let payload: Payload = serde_json::json!({
             "file_path": file_path,
             "content": content,
         }).try_into()?;
 
-        let id = Uuid::new_v4().to_string();
+        let mut hasher = DefaultHasher::new();
+        hasher.write(file_path.as_bytes());
+
+        let id = hasher.finish();
         let point = PointStruct::new(id.clone(), vector, payload);
         let req = UpsertPointsBuilder::new(collection_name, vec![point]);
         
@@ -79,8 +88,38 @@ impl QdrantClient {
         Ok(id)
     }
 
-     // todo add a separate insert fn for large vector sets
+    pub async fn insert_multiple_to_collection(&self, collection_name: &str, 
+        vectors: Vec<Vec<f32>>, file_paths: Vec<&str>, contents: Vec<&str>)
+    -> Result<Vec<u64>, Box<dyn std::error::Error>> {
+        
+        let mut points = Vec::new();
+        let mut ids = Vec::new();
 
+        for (i,vector) in vectors.into_iter().enumerate() {
+            let payload: Payload = serde_json::json!({
+                "file_path": file_paths[i],
+                "content": contents[i],
+            }).try_into()?;
+
+            let mut hasher = DefaultHasher::new();
+            hasher.write(file_paths[i].as_bytes());
+            let id = hasher.finish();
+
+            points.push(PointStruct::new(id.clone(), vector, payload));
+            ids.push(id);
+        }
+
+        let req = UpsertPointsBuilder::new(collection_name, points);
+        self.client.upsert_points(req).await?;
+        
+        Ok(ids)
+    }
+
+    // todo add a separate insert fn for large vector sets
+
+    /// Search a collection in the Vector DB using a query vector
+    /// 
+    /// - `limit` is the max number of results to return
     pub async fn search_collection(&self, collection_name: &str, 
         query_vec: Vec<f32>, limit: u64) 
     -> Result<Vec<ScoredPoint>, Box<dyn std::error::Error>> {

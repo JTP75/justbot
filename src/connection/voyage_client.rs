@@ -3,6 +3,8 @@
 use directories::ProjectDirs;
 use reqwest::{Client, ClientBuilder};
 
+use crate::common::config::{APPLICATION, ORGANIZATION, QUALIFIER};
+
 #[derive(Debug)]
 pub struct VoyageClient {
     client: Client,
@@ -12,8 +14,10 @@ pub struct VoyageClient {
 }
 
 impl VoyageClient {
+
+    /// Create a new instance of `VoyageClient`
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let project_dirs = ProjectDirs::from("com", "Justin Inc.", "rustbot").unwrap();
+        let project_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
         let env_path = project_dirs.config_dir().join(".env");
         dotenvy::from_path(env_path).ok();
 
@@ -28,6 +32,11 @@ impl VoyageClient {
         })
     }
 
+    /// Get the embedding for input text
+    /// 
+    /// - `input_text` can be either "document" or "query"
+    ///     - use "document" to embed the contents of a file
+    ///     - use "query" to get the query vector for a search query
     pub async fn get_embedding(&self, text: &str, input_type: &str) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
         let response = self.client
             .post(&self.url)
@@ -44,20 +53,43 @@ impl VoyageClient {
 
         let result = response["data"][0]["embedding"].as_array();
         match result {
-            Some(arr) => Ok(arr.iter().map(|v| v.as_f64().unwrap() as f32).collect()),
+            Some(arr) => Ok(arr.iter().map(|v| v.as_f64().unwrap_or(0.0) as f32).collect()),
             None => Err("Embedding is null, voyage api request probably failed".into())
         }
     }
-}
 
-// curl https://api.voyageai.com/v1/embeddings \
-//   -H "Content-Type: application/json" \
-//   -H "Authorization: Bearer $VOYAGE_API_KEY" \
-//   -d '{
-//     "input": "Sample text",
-//     "model": "voyage-3.5",
-//     "input_type": "document"
-//   }'
+    pub async fn get_embeddings(&self, texts: Vec<&str>, input_type: &str) -> Result<Vec<Vec<f32>>, Box<dyn std::error::Error>> {
+        let response = self.client
+            .post(&self.url)
+            .header("Authorization", format!("Bearer {}", self.api_key))
+            .json(&serde_json::json!({
+                "input": texts,
+                "model": self.model,
+                "input_type": input_type,
+            }))
+            .send().await?
+            .json::<serde_json::Value>().await?;
+
+        let data = response["data"].as_array()
+            .ok_or("Null response from voyage api")?;
+
+        let mut embeddings: Vec<Vec<f32>> = Vec::new();
+        for value in data.iter() {
+            let embedding = value["embedding"].as_array()
+                .ok_or("Missing embedding in response")?
+                .iter()
+                .map(|v| v.as_f64().unwrap_or(0.0) as f32)
+                .collect();
+            embeddings.push(embedding)
+        }
+
+        if texts.len()==embeddings.len() {
+            Ok(embeddings)
+        } else {
+            Err("Embeddings missing from response".into())
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {

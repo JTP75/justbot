@@ -4,10 +4,21 @@ use once_cell::sync::Lazy;
 use crate::rustbot::{bot::RustBot, session::SessionManager};
 
 pub trait Command {
+    /// Returns the formal name of the command
     fn name(&self) -> &str;
+
+    /// Returns a Vec of aliases for the command
     fn aliases(&self) -> Vec<&str>;
+
+    /// Returns a short (and AI readable) description for the command
     fn desc(&self) -> &str;
+
+    /// Returns a str containing usage instructions for the command
     fn help(&self) -> &str;
+
+    /// Executes the command
+    /// 
+    /// Returns response wrapped in a Result and Option
     fn exec(&self, sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>>;
 }
 

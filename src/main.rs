@@ -5,10 +5,12 @@ mod connection;
 
 use std::process::Command;
 
+use directories::ProjectDirs;
 use rustyline::{self,error::ReadlineError};
 
-use crate::{rustbot::{bot::RustBot, session::SessionManager}};
+use crate::{common::config::{APPLICATION, ORGANIZATION, QUALIFIER}, rustbot::{bot::RustBot, session::SessionManager}};
 
+/// callback for handling bot commands
 fn handle_bot_command(sm: &mut SessionManager, bot: &mut RustBot, input: &str) -> Option<String> {
     match bot.handle_command(sm, input) {
         Ok(Some(response)) => Some(format!("\x1b[1;32m>>\x1b[0m {}", response)),
@@ -17,10 +19,17 @@ fn handle_bot_command(sm: &mut SessionManager, bot: &mut RustBot, input: &str) -
     }
 }
 
+/// Program startup routine
+/// 
+/// - start Qdrant Vector DB using docker-compose script
 fn startup() -> Result<(),Box<dyn std::error::Error>> {
     log::info!("Entering startup...");
 
+    let p_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
+    let compose_file = p_dirs.config_dir().join("docker-compose.yml");
     let output = Command::new("docker-compose")
+        .arg("-f")
+        .arg(&compose_file)
         .arg("up")
         .arg("-d")
         .output()?;
@@ -35,10 +44,17 @@ fn startup() -> Result<(),Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/// Program shutdown routine
+/// 
+/// - stop Qdrant Vector DB using docker-compose script
 fn shutdown() -> Result<(),Box<dyn std::error::Error>> {
     log::info!("Entering shutdown...");
 
+    let p_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
+    let compose_file = p_dirs.config_dir().join("docker-compose.yml");
     let output = Command::new("docker-compose")
+        .arg("-f")
+        .arg(&compose_file)
         .arg("down")
         .output()?;
     if !output.status.success() {
@@ -123,6 +139,7 @@ fn main() {
         }
     }
 
+    // save rustyline history
     let result = rl.save_history(&sm.data_dir.join("rustyline_history.txt"));
     if let Err(e) = result {
         log::warn!("Failed to save rustyline history: {e}");

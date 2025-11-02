@@ -4,8 +4,11 @@ use anthropic::types::{ContentBlock, Message, MessageBuilder, Role};
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 
-use crate::rustbot::bot::RustBot;
+use crate::{common::config::{APPLICATION, ORGANIZATION, QUALIFIER}, rustbot::bot::RustBot};
 
+/// Serializable struct that can be saved to a json file
+/// 
+/// - contains topic string and messages data
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Session {
     pub topic: String,
@@ -22,8 +25,11 @@ impl SessionManager {
 
     // public
 
+    /// Create a new SessionManager
+    /// 
+    /// - technically might panic, but almost certainly not
     pub fn new() -> Self {
-        let project_dirs = ProjectDirs::from("com", "Justin Inc.", "rustbot").unwrap();
+        let project_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
         SessionManager { 
             data_dir: project_dirs.data_dir().join(""),
             save_dir: project_dirs.data_dir().join("sessions/"),
@@ -31,6 +37,7 @@ impl SessionManager {
         }
     }
 
+    /// Save conversation and topic string to a file
     pub fn save_session(&mut self, bot: &RustBot, filename_arg: Option<String>) -> Result<(),Box<dyn std::error::Error>> {
         let path = match filename_arg {
             Some(filename) => self.save_dir.join(filename),
@@ -47,11 +54,13 @@ impl SessionManager {
         self.save_session_as_json(path.clone(), bot)
     }
 
+    /// Load conversation and topic string from a file
     pub fn load_session(&mut self, bot: &mut RustBot, filename: String) -> Result<(),Box<dyn std::error::Error>> {
         let path = self.save_dir.join(filename);
         self.load_session_from_json(path.clone(), bot)
     }
 
+    /// Get a list of session files in the save_dir
     pub fn list_sessions(&self) -> Result<Vec<String>, Box<dyn std::error::Error>> {
         let saved_sessions = fs::read_dir(&self.save_dir)?
             .filter_map(|entry| {
@@ -81,8 +90,7 @@ impl SessionManager {
             .build()?;
         convo_copy.push(topic_prompt);
         
-        let anthroclient = bot.get_chat_client();
-        let topic_response = anthroclient.send_message(&convo_copy, "", 0.0)?;
+        let topic_response = bot.query_llm(&convo_copy, "", 0.0)?;
 
         match topic_response.content.first() {
             Some(ContentBlock::Text { text }) => Ok(text.chars().filter(|c| c.is_alphanumeric() || c.is_whitespace()).collect()),
