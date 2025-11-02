@@ -71,7 +71,6 @@ Shared utilities and configuration management
    Create `.env` file in the config directory (`~/.config/rustbot/.env`):
    ```env
    ANTHROPIC_API_KEY=your_anthropic_key
-   QDRANT_API_KEY=your_qdrant_key
    VOYAGE_API_KEY=your_voyage_key
    ```
 
@@ -117,14 +116,6 @@ When launched, RustBot will:
     list                aliases=()
     ...
 ```
-
-### Commands
-
-- `help [command]` - Show available commands or detailed help for a specific command
-- `hello` - Get a friendly greeting
-- `whereami` - Display current working directory
-- `list` - Show all saved conversation sessions
-- `exit`, `q`, `wq` - Exit the bot (with optional session save)
 
 ### Conversation Sessions
 
