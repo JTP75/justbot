@@ -12,10 +12,9 @@ RustBot is an interactive command-line chatbot powered by Anthropic's Claude API
 - **🔍 RAG Pipeline** - Semantic search using Qdrant vector database and Voyage AI embeddings
 - **💬 Session Management** - Persistent conversation history with save/load capabilities
 - **🛠️ Extensible Commands** - Modular command system with automatic registration
-- **📝 Interactive CLI** - Rich readline interface with history and auto-completion
 - **🐳 Docker Integration** - Automatic Qdrant service management via docker-compose
 - **⚙️ Configurable** - JSON-based configuration for models, tokens, and behavior
-- **📅 MOTD Support** - Daily message of the day display
+- **📅 MOTD Support** - Daily message of the day display for emotional support
 
 ## Architecture
 
@@ -46,57 +45,151 @@ Shared utilities and configuration management
 
 ### Prerequisites
 
+- Current version is only tested on WSL2 Ubuntu
 - Rust 1.70+ (2024 edition)
-- Docker and docker-compose (for Qdrant vector database)
+- Docker and docker-compose (for Qdrant vector database service)
+  - [Docker Desktop](https://www.docker.com/products/docker-desktop) (includes docker-compose)
 - API keys for:
-  - Anthropic Claude
-  - Qdrant Cloud (or local instance)
-  - Voyage AI
+  - [Anthropic Claude API Key](https://console.anthropic.com/)
+  - [Voyage AI API Key](https://www.voyageai.com/)
 
 ### Setup
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd rustbot
-   ```
+### 1. Clone the Repository
 
-2. **Install dependencies**
-   ```bash
-   cargo build --release
-   ```
+```
+git clone https://github.com/JTP75/justbot.git
+cd rustbot
+```
 
-3. **Configure environment variables**
-   
-   Create `.env` file in the config directory (`~/.config/rustbot/.env`):
-   ```env
-   ANTHROPIC_API_KEY=your_anthropic_key
-   VOYAGE_API_KEY=your_voyage_key
-   ```
+### 2. Run Setup Script
 
-4. **Set up configuration files**
-   
-   Place JSON config files in `~/.config/rustbot/`:
-   - `bot_config.json` - Bot name and general settings
-   - `anthropic_config.json` - Model selection and token limits
-   - `qdrant_config.json` - Vector database settings
-   - `voyage_config.json` - Embedding model configuration
-   - `docker-compose.yml` - Qdrant service definition
+RustBot includes an automated setup script that creates necessary directories and configuration files:
 
-5. **Run the bot**
-   ```bash
-   cargo run --release
-   ```
+```bash
+cargo run --bin setup
+```
+
+This setup script will:
+- Create configuration directory at:
+  - **Linux/macOS**: `~/.config/rustbot/`
+  - **Windows**: `%APPDATA%\The justbot Company\rustbot\config\`
+- Create data directory at:
+  - **Linux/macOS**: `~/.local/share/rustbot/`
+  - **Windows**: `%APPDATA%\The justbot Company\rustbot\data\`
+- Create sessions subdirectory for conversation persistence
+- Copy default configuration files:
+  - `bot_config.json`
+  - `vectordb_config.json` (Qdrant settings)
+  - `anthropic_config.json`
+  - `prompts.json`
+  - `docker-compose.yml`
+- Generate a `.env` template file
+
+### 3. Configure API Keys
+
+After running setup, edit the `.env` file created in your config directory:
+
+Add your API keys:
+```env
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+VOYAGE_API_KEY=your_voyage_api_key_here
+```
+
+**Important**: Do not commit the `.env` file to version control!
+
+### 4. Configure Bot Settings (Optional)
+
+You can customize the bot's behavior by editing the JSON configuration files in your config directory:
+
+**`bot_config.json`** - General bot settings:
+```json
+{
+  "default_name": "rustbot",
+  "default_collection": "rustbot_memory",
+  "motd_filename": "motd.json"
+}
+```
+
+**`anthropic_config.json`** - Claude model and Anthropic settings:
+```json
+{
+  "default_model": "claude-3-opus-20240229",
+  "max_tokens": 4096
+}
+```
+
+**`vectordb_config.json`** - Qdrant database and Voyage AI settings:
+```json
+{
+  "dimensionality": 512,
+  "default_search_limit": 5,
+
+  "embedding_url": "https://api.voyageai.com/v1/embeddings",
+  "embedding_model": "voyage-3-lite"
+}
+```
+
+**`prompts.json`** - Prompts used for generation tasks:
+```json
+{
+  "generate_topic": "What is the topic of this conversation, in five words or less? Write your response with as few words as possible. Response with these five or less words only.",
+  "motd": "Write a creative, one-sentence MOTD. It can be related to news/events, or just a friendly message. Respond with only the message."
+}
+```
+
+### 5. Install PDF-to-Text Util (Optional)
+
+**This part highly unstable and incomplete.**
+
+The current implementation relies on the pdftotext command and will certainly not work outside Linux.
+
+```bash
+sudo apt install poppler-utils
+```
+
+This allows the `store` command to work for PDF files.
+
+### 6. Build/Install the Project
+
+Build the project
+```bash
+cargo build --release
+```
+
+Install the project
+```bash
+cargo install --path .
+```
 
 ## Usage
 
 ### Starting RustBot
 
+From installation dir:
+```bash
+cargo run --release
+```
+
+Or use the compiled binary:
+```bash
+./target/release/rustbot
+```
+
+If installed by cargo, run anywhere:
+```bash
+rustbot
+```
+
 When launched, RustBot will:
 1. Start the Qdrant vector database service via docker-compose
 2. Initialize the bot and session manager
 3. Display the message of the day
-4. Present an interactive prompt
+4. Begin the CLI
+
+### Accessing the Qdrant VectorDB
+
+Once the bot is running you can open the [Qdrant Dashboard](http://localhost:6333/dashboard) in your browser on localhost. This allows access to existing collections, tutorials, and visualization tools.
 
 ### Basic Interaction
 
@@ -104,22 +197,41 @@ When launched, RustBot will:
 >> Hi, I'm rustbot! Type 'help' to see what I can do.
 >> Today is Monday, January 1, 2024.
 >> Welcome to RustBot!
-
 << hello
 >> Hello there! My name is rustbot.
-
 << help
 >> Available commands are:
-    help                aliases=()
-    hello               aliases=()
-    whereami            aliases=()
-    list                aliases=()
-    ...
+        load                    aliases=()
+        wexit                   aliases=(wq)
+        hello                   aliases=()
+        get-collection          aliases=(getc)
+        whereami                aliases=()
+        exit                    aliases=(q | quit)
+        store                   aliases=()
+        message                 aliases=(msg)
+        set-collection          aliases=(setc)
+        save                    aliases=(w)
+        message-rag             aliases=(msg-rag | rag)
+        list                    aliases=()
+        motd                    aliases=()
+        help                    aliases=()
+        ...
+<< help load
+>> load
+
+DESC
+Load a session file over the current session
+
+HELP
+Usage: load <filename>
+Filename must be specified
+
+<< 
 ```
 
 ### Conversation Sessions
 
-Sessions are automatically managed and persisted to:
+Conversation sessions can be saved and loaded using the `save` and `load` commands. Sessions are managed and persisted to:
 ```
 ~/.local/share/rustbot/sessions/
 ```
@@ -127,30 +239,6 @@ Sessions are automatically managed and persisted to:
 Command history is saved to:
 ```
 ~/.local/share/rustbot/rustyline_history.txt
-```
-
-## Configuration
-
-### Directory Structure
-
-RustBot uses platform-specific directories:
-
-**Linux/macOS:**
-- Config: `~/.config/rustbot/`
-- Data: `~/.local/share/rustbot/`
-
-**Windows:**
-- Config: `%APPDATA%\The justbot Company\rustbot\config\`
-- Data: `%APPDATA%\The justbot Company\rustbot\data\`
-
-### Model Configuration
-
-Edit `anthropic_config.json`:
-```json
-{
-  "default_model": "claude-3-opus-20240229",
-  "max_tokens": 4096
-}
 ```
 
 ## Development
@@ -215,21 +303,6 @@ Key dependencies include:
 - `serde`/`serde_json` - Serialization
 - `chrono` - Date/time handling
 - `directories` - Platform-specific paths
-
-## Lifecycle
-
-**Startup:**
-1. Initialize logger
-2. Start docker-compose services (Qdrant)
-3. Load bot configuration
-4. Initialize session manager
-5. Load MOTD and display greeting
-6. Enter interactive loop
-
-**Shutdown:**
-1. Save readline history
-2. Stop docker-compose services
-3. Clean up resources
 
 ## Error Handling
 
