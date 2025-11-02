@@ -91,15 +91,6 @@ impl VoyageClient {
     }
 }
 
-// curl https://api.voyageai.com/v1/embeddings \
-//   -H "Content-Type: application/json" \
-//   -H "Authorization: Bearer $VOYAGE_API_KEY" \
-//   -d '{
-//     "input": "Sample text",
-//     "model": "voyage-3.5",
-//     "input_type": "document"
-//   }'
-
 #[cfg(test)]
 mod tests {
     use super::*;

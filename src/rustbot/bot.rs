@@ -541,10 +541,6 @@ impl ClientManager {
 
 #[cfg(test)]
 mod tests {
-    use directories::ProjectDirs;
-
-    use crate::common::config::{APPLICATION, ORGANIZATION, QUALIFIER};
-
     use super::*;
 
     #[tokio::test]
@@ -552,15 +548,9 @@ mod tests {
         let bot = RustBot::new("testbot");
         let coll_name = "test_collection_botrs";
 
-        let project_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
-#[allow(unused)]
-        let path = project_dirs.cache_dir().join("tmp.md");
-
-        let path = PathBuf::from("/mnt/c/Users/pacel/northeastern/fall_2025/TELE6510/readings/ieee_the_institute_iot.pdf");
-        // let path = PathBuf::from("/mnt/c/Users/pacel/northeastern/fall_2025/TELE6510/homework/hw1.pdf");
+        let path = PathBuf::from("./README.md");
 
         let _result = bot._get_vdb_client().add_collection(coll_name).await;
-        // assert!(result.is_ok(), "{}", result.unwrap_err());
 
         let result = bot.client_mgr.embed_file(coll_name, &path).await;
         assert!(result.is_ok(), "{}", result.unwrap_err())
