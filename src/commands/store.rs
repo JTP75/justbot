@@ -29,7 +29,7 @@ impl Command for StoreCommand {
 
 
             let convert_pdfs: bool = crate::common::config
-                ::get_config("vectordb_config.json", "enable_pdf_embedding")?;
+                ::get_config("bot_config.json", "enable_pdf_embedding")?;
 
             // get list of files in directory
             let paths = fs::read_dir(path)?
