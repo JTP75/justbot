@@ -1,20 +1,20 @@
-use anthropic::{client::{Client, ClientBuilder}, types::{ContentBlock, Message, MessagesRequestBuilder, MessagesResponse}};
+use anthropic::types::{ContentBlock, Message, MessagesRequestBuilder, MessagesResponse};
 use directories::ProjectDirs;
 use dotenvy;
+
+use reqwest::{Client, ClientBuilder};
 
 use crate::common::config::{APPLICATION, ORGANIZATION, QUALIFIER};
 
 #[derive(Debug)]
 pub struct AnthropicClient {
     client: Client,
+    api_key: String,
+    url: String,
+    api_version: String,
     model: String,
     max_tokens: usize,
 }
-
-/**
- * temperature adjusts randomness, defaults to 1.0
- * stream allows to stream response
- */
 
 impl AnthropicClient {
 
@@ -27,17 +27,17 @@ impl AnthropicClient {
         dotenvy::from_path(env_path).ok();
 
         let api_key = std::env::var("ANTHROPIC_API_KEY")?;
-        let model: String = crate::common::config
-            ::get_config("anthropic_config.json", "default_model")?;
-        let max_tokens: usize = crate::common::config
-            ::get_config("anthropic_config.json", "max_tokens")?;
-
         Ok(Self {
-            client: ClientBuilder::default()
-                .api_key(api_key)
-                .build()?,
-            model: model.as_str().into(),
-            max_tokens: max_tokens,
+            client: ClientBuilder::default().build()?,
+            api_key: api_key,
+            url: crate::common::config
+                ::get_config("anthropic_config.json", "base_url")?,
+            api_version: crate::common::config
+                ::get_config("anthropic_config.json", "anthropic_version")?,
+            model: crate::common::config
+                ::get_config("anthropic_config.json", "default_model")?,
+            max_tokens: crate::common::config
+                ::get_config("anthropic_config.json", "max_tokens")?,
         })
     }
 
@@ -64,7 +64,23 @@ impl AnthropicClient {
             .messages(&messages[..])
             .system(sys_prompt)
             .build()?;
-        let response = self.client.messages(request).await?;
-        Ok(response)
+
+        let response_json = self.client
+            .post(format!("{}/messages", &self.url))
+            .header("x-api-key", &self.api_key)
+            .header("anthropic-version", &self.api_version)
+            .header("content-type", "application/json")
+            .json(&serde_json::json!(request))
+            .send().await?
+            .json::<serde_json::Value>().await?;
+
+        let response_map = response_json.as_object()
+            .ok_or("Response was null")?;
+
+        if response_map.contains_key("error") {
+            Err(format!("{}", response_map.get("error").ok_or("Error is null")?).into())
+        } else {
+            Ok(serde_json::from_value(response_json)?)
+        }
     }
 }
