@@ -467,6 +467,10 @@ impl ClientManager {
         Ok(())
     }
 
+    /// Gets the embedding for multiple files and stores to the Vector DB
+    /// 
+    /// - assumes each path in `file_path` is valid
+    /// - attempts to convert pdfs to text
     pub async fn embed_files(&self, collection_name: &str, file_paths: Vec<&Path>) 
     -> Result<(), Box<dyn std::error::Error>> {
 

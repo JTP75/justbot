@@ -27,13 +27,17 @@ impl Command for StoreCommand {
         if path.is_dir() {
             log::info!("This is a directory. {:?}", path);
 
+
+            let convert_pdfs: bool = crate::common::config
+                ::get_config("vectordb_config.json", "enable_pdf_embedding")?;
+
             // get list of files in directory
             let paths = fs::read_dir(path)?
                 .filter_map(|rslt| rslt.ok())
                 .map(|dir_entry| dir_entry.path())
                 .filter(|path| path.is_file())
                 .filter(|path| 
-                    path.extension().and_then(|ext| ext.to_str()) == Some("pdf") ||
+                    (convert_pdfs && path.extension().and_then(|ext| ext.to_str()) == Some("pdf")) ||
                     String::from_utf8(fs::read(path).unwrap_or("".into())).is_ok()
                 )
                 .collect::<Vec<_>>();

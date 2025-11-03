@@ -3,5 +3,6 @@
 	"enable_anthropic": true,
 	"motd_filename": "motd.json",
 	"base_sys_prompt": "Your name is rustbot. Your name officially has no meaning in particular. You are being called for general use. Your response should always be written in english.",
-	"default_collection": "my_personal_collection_10292025"
+	"default_collection": "my_personal_collection_10292025",
+	"enable_pdf_embedding": true
 }
