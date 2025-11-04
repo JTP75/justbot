@@ -39,7 +39,7 @@ impl McpClient {
         Ok(client)
     }
 
-    pub fn call_tool(&mut self, name: &str, args: Value)
+    pub fn call_tool(&mut self, name: &str, args: &Value)
     -> Result<McpToolResult, Box<dyn std::error::Error>> {
         let request = serde_json::json!({
             "jsonrpc": "2.0",
@@ -93,21 +93,14 @@ impl McpClient {
             },
         });
 
-        log::debug!("Sending init request to MCP server...");
         self.send_request(&request)?;
-        log::debug!("Done!");
-        
-        log::debug!("Reading response...");
         let _response = self.read_response()?;
-        log::debug!("Done!");
 
-        log::debug!("Sending notification...");
         let notification = serde_json::json!({
             "jsonrpc": "2.0",
             "method": "notifications/initialized"
         });
         self.send_request(&notification)?;
-        log::debug!("Done!");
 
         Ok(())
     }
@@ -129,7 +122,6 @@ impl McpClient {
         let rt = tokio::runtime::Runtime::new()?;
         let mut line = String::new();
 
-        log::info!("entering hang area");
         rt.block_on(async {
             let timeout_duration = Duration::from_secs(10);
             
@@ -140,8 +132,7 @@ impl McpClient {
                 Ok(Err(e)) => Err(Box::new(e) as Box<dyn std::error::Error>),
                 Err(_) => Err("Read timeout after 10 seconds".into()),
             }
-        })?;
-        log::info!("exiting hang area");
+        })?; // this should make the stdin reader time out, but it hangs...
 
         match serde_json::from_str(&line) {
             Ok(response) => Ok(response),

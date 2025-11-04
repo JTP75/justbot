@@ -19,7 +19,7 @@ impl Command for MessageToolCommand {
         bot.push_message(user_message);
 
         let sys_prompt: String = crate::common::config
-            ::get_config("bot_config.json", "base_sys_prompt")?;
+            ::get_config("bot_config.json", "tool_sys_prompt")?;
         let response = bot.query_llm_with_tools(&bot.get_messages(), &sys_prompt, 0.75)?;
 
         let mut agent_message = Message {

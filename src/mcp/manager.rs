@@ -42,6 +42,9 @@ impl McpManager {
 
     pub fn execute_tool(&mut self, name: &str, args: serde_json::Value) 
     -> Result<Option<String>, Box<dyn std::error::Error>> {
+
+        
+        // this still just iterates through the clients until it finds the right tool
         for client in self.clients.values_mut() {
             if let Ok(result) = client.call_tool(name, args.clone()) {
                 let text = result

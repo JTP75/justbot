@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::common::{config::{APPLICATION, ORGANIZATION, QUALIFIER}, types::{ContentBlock, Message, MessagesResponse}};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ToolDefinition {
     pub name: String,
     pub description: String,
@@ -75,6 +75,8 @@ impl AnthropicClient {
             "system": sys_prompt,
         });
 
+        log::info!("Input tokens (approx): {}", self.estimate_token_count_text(messages));
+
         let response_json = self.client
             .post(format!("{}/messages", &self.url))
             .header("x-api-key", &self.api_key)
@@ -109,6 +111,8 @@ impl AnthropicClient {
             "system": sys_prompt,
             "tools": &tools[..]
         });
+
+        log::info!("Input tokens (approx): {}", self.estimate_token_count_text(messages));
 
         let response_json = self.client
             .post(format!("{}/messages", &self.url))

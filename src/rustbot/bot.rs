@@ -3,15 +3,15 @@ use std::path::{Path, PathBuf};
 
 use chrono::{self, Local};
 use directories::ProjectDirs;
-use serde::{Deserialize, Serialize};
 
-use crate::commands::{Command, REGISTRY};
+use crate::commands::{self, Command};
 use crate::common::config::{APPLICATION, ORGANIZATION, QUALIFIER};
 use crate::common::types::{ContentBlock, Message, MessagesResponse, Role, ToolResultContentBlock};
 use crate::connection::anthropic_client::{AnthropicClient, ToolDefinition};
 use crate::connection::qdrant_client::QdrantClient;
 use crate::connection::voyage_client::VoyageClient;
-use crate::mcp::manager::McpManager;
+use crate::mcp::McpConfig;
+use crate::rustbot::tool_manager::ToolManager;
 use crate::rustbot::session::SessionManager;
 
 // structs
@@ -24,7 +24,7 @@ pub struct RustBot {
     client_mgr: ClientManager,
 
     // mut fields
-    mcp_mgr: McpManager,
+    tool_mgr: ToolManager,
 
     // state
     topic: String,
@@ -44,18 +44,6 @@ pub struct ClientManager {
     pub chat_client: AnthropicClient,
     pub vdb_client: QdrantClient,
     pub embedding_client: VoyageClient,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct McpServerConfig {
-    name: String,
-    command: String,
-    args: Vec<String>,
-}
-
-#[derive(Debug, Deserialize, Serialize, Default)]
-struct McpConfig {
-    mcp_servers: Vec<McpServerConfig>,
 }
 
 // impls
@@ -86,7 +74,7 @@ impl RustBot {
                 embedding_client: VoyageClient::new().unwrap(),
             },
 
-            mcp_mgr: McpManager::new(),
+            tool_mgr: ToolManager::new(),
             
             topic: "".into(),
             messages: vec![],
@@ -104,7 +92,7 @@ impl RustBot {
         let mcp_config: McpConfig = serde_json::from_str(&json).unwrap_or_default();
         for mcp_server in mcp_config.mcp_servers {
             let args: Vec<&str> = mcp_server.args.iter().map(|s| s.as_str()).collect();
-            if let Err(e) = bot.mcp_mgr.register_server(
+            if let Err(e) = bot.tool_mgr.register_mcp_server(
                 mcp_server.name.clone(), 
                 &mcp_server.command, 
                 &args
@@ -283,12 +271,16 @@ impl RustBot {
     pub fn query_llm_with_tools(&mut self, messages: &Vec<Message>, sys_prompt: &str, randomness: f64) 
     -> Result<MessagesResponse,Box<dyn std::error::Error>> {
         let rt = tokio::runtime::Runtime::new()?;
-        let tools = self.mcp_mgr.get_tools_as_anthropic();
         let mut messages_copy = messages.clone();
+        
+        // get mcp and integrated tools
+        let tooldefs = self.tool_mgr.get_tools_as_tooldefs();
 
+        // only allow ten consecutive tool calls
         for _i in 0..10 {
+            // get ai response
             let response = rt.block_on(self.client_mgr
-                .call_model_with_tools_callback(&messages_copy, sys_prompt, &tools, randomness))?;
+                .call_model_with_tools_callback(&messages_copy, sys_prompt, &tooldefs, randomness))?;
 
             let tool_uses: Vec<_> = response.content.iter()
                 .filter_map(|cb| match cb {
@@ -306,12 +298,16 @@ impl RustBot {
             
             messages_copy.push(response.into());
 
+            // execute tools
+
             log::info!("Executing {} tools...", tool_uses.len());
 
             let mut content: Vec<ContentBlock> = vec![];
             for (id, name, input) in tool_uses.iter() {
                 log::info!("Executing tool '{name}': {input}");
-                let output = match self.mcp_mgr.execute_tool(name, input.clone()) {
+                // Temporarily take the tool manager out of self to avoid overlapping mutable borrows
+                let mut tool_mgr_tmp = std::mem::replace(&mut self.tool_mgr, ToolManager::new());
+                let output = match tool_mgr_tmp.execute_tool(self, name, input) {
                     Ok(Some(output)) => {
                         log::info!("Tool '{}' executed successfully.\nOutput tokens (approx): {}", name, output.len()/4);
                         if output.len()/4 > 100000 {
@@ -329,6 +325,8 @@ impl RustBot {
                         format!("Tool '{}' execution failed: {}", name, e)
                     }
                 };
+                // restore the tool manager back into self
+                self.tool_mgr = tool_mgr_tmp;
 
                 content.push(ContentBlock::ToolResult { 
                     tool_use_id: id.into(), 
@@ -532,7 +530,7 @@ impl RustBot {
         let tokenized: Vec<&str> =  input.split_whitespace().collect();
         let command_name = tokenized.first().ok_or("User input empty")?;
 
-        let command = REGISTRY.lock().unwrap()
+        let command = commands::REGISTRY.lock().unwrap()
             .get(&command_name)
             .ok_or_else(|| format!("Unknown command: {command_name}"))?;
 

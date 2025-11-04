@@ -9,6 +9,7 @@ mod commands;
 mod rustbot;
 mod connection;
 mod mcp;
+mod tools;
 
 use std::process::Command;
 
