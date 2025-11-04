@@ -189,6 +189,9 @@ impl RustBot {
         Ok(collections)
     }
 
+    /// todo
+    pub fn get_current_tools(&self) -> Vec<ToolDefinition> { self.tool_mgr.get_tools_as_tooldefs() }
+
     /// Add a named collection to the vector database
     /// 
     /// - will error if collection already exists, but this can be ignored
@@ -297,6 +300,7 @@ impl RustBot {
             }
             
             messages_copy.push(response.into());
+            let curr_tokens = self.client_mgr.chat_client.estimate_token_count_text(&messages_copy);
 
             // execute tools
 
@@ -305,27 +309,32 @@ impl RustBot {
             let mut content: Vec<ContentBlock> = vec![];
             for (id, name, input) in tool_uses.iter() {
                 log::info!("Executing tool '{name}': {input}");
-                // Temporarily take the tool manager out of self to avoid overlapping mutable borrows
+
                 let mut tool_mgr_tmp = std::mem::replace(&mut self.tool_mgr, ToolManager::new());
+
                 let output = match tool_mgr_tmp.execute_tool(self, name, input) {
                     Ok(Some(output)) => {
                         log::info!("Tool '{}' executed successfully.\nOutput tokens (approx): {}", name, output.len()/4);
-                        if output.len()/4 > 100000 {
-                            format!("Tool '{}' execution failed: Too many tokens (~{})", name, output.len()/4)
+                        if curr_tokens + output.len()/4 > 190000 {
+                            format!("Tool '{}' execution succeeded, but returned too many tokens (~{}). The current conversation is ~{} tokens and the upper limit is 190000 tokens.", 
+                                name, 
+                                output.len()/4,
+                                curr_tokens
+                            )
                         } else {
                             output
                         }
                     },
                     Ok(None) => {
                         log::info!("Tool '{}' executed successfully.", name);
-                        format!("Tool '{}' executed successfully.", name)
+                        format!("Tool '{}' executed successfully with no return value.", name)
                     },
                     Err(e) => {
                         log::error!("Tool '{}' execution failed:\n{}", name, e);
                         format!("Tool '{}' execution failed: {}", name, e)
                     }
                 };
-                // restore the tool manager back into self
+
                 self.tool_mgr = tool_mgr_tmp;
 
                 content.push(ContentBlock::ToolResult { 
@@ -345,6 +354,14 @@ impl RustBot {
         Err("too many iter".into())
     }
 
+    /// todo
+    pub fn retrieve_from_vdb(&self, collection_name: &str, query: &str, search_limit: Option<u64>)
+    -> Result<String, Box<dyn std::error::Error>> {
+        let runtime = tokio::runtime::Runtime::new()?;
+        let json_results = runtime.block_on(self.client_mgr.query_vdb(collection_name, query, search_limit))?;
+        Ok(serde_json::to_string_pretty(&json_results)?)
+    }
+
     /// Generate an anthropic message with rag
     /// 
     /// The resulting Message struct has two content blocks:
@@ -354,7 +371,7 @@ impl RustBot {
     /// # Examples
     /// 
     /// ```
-    /// let user_message = bot.query_with_rag(
+    /// let user_message = bot.generate_rag_message(
     ///     "programming_project_docs", 
     ///     "tell me about the programming project"
     /// )?;
@@ -366,11 +383,11 @@ impl RustBot {
     /// let ans = bot.query_llm(bot.get_messages(), "You are retrieving documents, say some technical stuff")
     /// // ...
     /// ```
-    pub fn generate_rag_query(&self, collection_name: &str, query: &str)
+    pub fn generate_rag_message(&self, collection_name: &str, query: &str)
     -> Result<Message, Box<dyn std::error::Error>> {
 
         let runtime = tokio::runtime::Runtime::new()?;
-        let json_context = runtime.block_on(self.client_mgr.query_vdb(collection_name, query))?;
+        let json_context = runtime.block_on(self.client_mgr.query_vdb(collection_name, query, None))?;
         let context = serde_json::to_string_pretty(&json_context)?;
 
         Ok(Message {
@@ -640,16 +657,22 @@ impl ClientManager {
     /// - returns json result containing a list of the top `n` relevant files
     ///     - where `n` is the search_limit set in vectordb_config.json
     /// - each entry contains the file path, file contents, and search score value
-    pub async fn query_vdb(&self, collection_name: &str, query: &str) 
+    pub async fn query_vdb(&self, collection_name: &str, query: &str, search_limit: Option<u64>) 
     -> Result<serde_json::Value, Box<dyn std::error::Error>> {
 
         // vectorize query
         let qvec = self.embedding_client.get_embedding(query, "query").await?;
 
-        // search db
-        let search_limit = crate::common::config
+        let config_limit = crate::common::config
             ::get_config("vectordb_config.json", "default_search_limit")?;
-        let search_result = self.vdb_client.search_collection(collection_name, qvec, search_limit).await?;
+        let limit = if let Some(limit) = search_limit && limit < config_limit {
+            limit
+        } else {
+            config_limit
+        };
+
+        // search db
+        let search_result = self.vdb_client.search_collection(collection_name, qvec, limit).await?;
 
         // build context (json)
         Ok(serde_json::json!({

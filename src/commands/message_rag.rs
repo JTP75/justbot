@@ -16,7 +16,7 @@ impl Command for MessageRagCommand {
                 ::get_config("bot_config.json", "default_collection")?,
         };
 
-        let user_message = bot.generate_rag_query(&collection_name, &args.join(" "))?;
+        let user_message = bot.generate_rag_message(&collection_name, &args.join(" "))?;
         bot.push_message(user_message);
 
         let sys_prompt: String = crate::common::config

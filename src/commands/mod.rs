@@ -65,6 +65,7 @@ pub mod store;
 pub mod whereami;
 pub mod get_collection;
 pub mod set_collection;
+pub mod get_tools;
 
 // session
 pub mod save;

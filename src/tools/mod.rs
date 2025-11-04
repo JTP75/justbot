@@ -133,3 +133,5 @@ pub static REGISTRY: Lazy<std::sync::Mutex<ToolRegistry>> =
 // register tools
 
 pub mod get_greeting;
+
+pub mod rag;
