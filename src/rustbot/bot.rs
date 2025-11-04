@@ -2,8 +2,11 @@ use std::{env, fs};
 use std::path::{Path, PathBuf};
 
 use chrono::{self, Local};
+use directories::ProjectDirs;
+use serde::{Deserialize, Serialize};
 
 use crate::commands::{Command, REGISTRY};
+use crate::common::config::{APPLICATION, ORGANIZATION, QUALIFIER};
 use crate::common::types::{ContentBlock, Message, MessagesResponse, Role, ToolResultContentBlock};
 use crate::connection::anthropic_client::{AnthropicClient, ToolDefinition};
 use crate::connection::qdrant_client::QdrantClient;
@@ -43,6 +46,18 @@ pub struct ClientManager {
     pub embedding_client: VoyageClient,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+struct McpServerConfig {
+    name: String,
+    command: String,
+    args: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Default)]
+struct McpConfig {
+    mcp_servers: Vec<McpServerConfig>,
+}
+
 // impls
 
 impl RustBot {
@@ -59,6 +74,10 @@ impl RustBot {
     /// let bot = RustBot::new("name");
     /// ```
     pub fn new(name: impl Into<String>) -> Self {
+
+        let p_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
+        let server_file = p_dirs.config_dir().join("mcp_servers.json");
+
         let mut bot = Self { 
             name: name.into(), 
             client_mgr: ClientManager {
@@ -81,12 +100,19 @@ impl RustBot {
             _total_tokens: vec![],
         };
 
-        if let Err(e) = bot.mcp_mgr.register_server(
-            "filesystem".into(), 
-            "npx",
-            &["-y", "@modelcontextprotocol/server-filesystem", "/home/pacel"]
-        ) {
-            log::warn!("Failed to register MCP server: {e}")
+        let json = fs::read_to_string(server_file).unwrap();
+        let mcp_config: McpConfig = serde_json::from_str(&json).unwrap_or_default();
+        for mcp_server in mcp_config.mcp_servers {
+            let args: Vec<&str> = mcp_server.args.iter().map(|s| s.as_str()).collect();
+            if let Err(e) = bot.mcp_mgr.register_server(
+                mcp_server.name.clone(), 
+                &mcp_server.command, 
+                &args
+            ) {
+                log::error!("Failed to register server '{}':\n{}", mcp_server.name, e);
+            } else {
+                log::info!("Successfully registered server '{}'", mcp_server.name);
+            }
         }
 
         bot

@@ -129,6 +129,7 @@ impl McpClient {
         let rt = tokio::runtime::Runtime::new()?;
         let mut line = String::new();
 
+        log::info!("entering hang area");
         rt.block_on(async {
             let timeout_duration = Duration::from_secs(10);
             
@@ -140,6 +141,7 @@ impl McpClient {
                 Err(_) => Err("Read timeout after 10 seconds".into()),
             }
         })?;
+        log::info!("exiting hang area");
 
         match serde_json::from_str(&line) {
             Ok(response) => Ok(response),

@@ -45,7 +45,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // copy bot_config.json
     if !config_dir.join("bot_config.json").exists() {
-        fs::copy("config/bot_config.json", config_dir.join("bot_config.json"))?;
+        fs::copy("config_files/bot_config.json", config_dir.join("bot_config.json"))?;
         log::info!("Copied bot_config.json to {:?}", config_dir);
     } else {
         log::debug!("bot_config.json already exists, skipping copy.");
@@ -53,7 +53,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // copy vectordb_config.json
     if !config_dir.join("vectordb_config.json").exists() {
-        fs::copy("config/vectordb_config.json", config_dir.join("vectordb_config.json"))?;
+        fs::copy("config_files/vectordb_config.json", config_dir.join("vectordb_config.json"))?;
         log::info!("Copied vectordb_config.json to {:?}", config_dir);
     } else {
         log::debug!("vectordb_config.json already exists, skipping copy.");
@@ -61,7 +61,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // copy anthropic_config.json
     if !config_dir.join("anthropic_config.json").exists() {
-        fs::copy("config/anthropic_config.json", config_dir.join("anthropic_config.json"))?;
+        fs::copy("config_files/anthropic_config.json", config_dir.join("anthropic_config.json"))?;
         log::info!("Copied anthropic_config.json to {:?}", config_dir);
     } else {
         log::debug!("anthropic_config.json already exists, skipping copy.");
@@ -69,15 +69,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // copy prompts.json
     if !config_dir.join("prompts.json").exists() {
-        fs::copy("config/prompts.json", config_dir.join("prompts.json"))?;
+        fs::copy("config_files/prompts.json", config_dir.join("prompts.json"))?;
         log::info!("Copied prompts.json to {:?}", config_dir);
     } else {
         log::debug!("prompts.json already exists, skipping copy.");
     }
 
+    // copy mcp_servers.json
+    if !config_dir.join("mcp_servers.json").exists() {
+        fs::copy("config_files/mcp_servers.json", config_dir.join("mcp_servers.json"))?;
+        log::info!("Copied mcp_servers.json to {:?}", config_dir);
+    } else {
+        log::debug!("mcp_servers.json already exists, skipping copy.");
+    }
+
     // copy docker-compose.yml
     if !config_dir.join("docker-compose.yml").exists() {
-        fs::copy("config/docker-compose.yml", config_dir.join("docker-compose.yml"))?;
+        fs::copy("config_files/docker-compose.yml", config_dir.join("docker-compose.yml"))?;
         log::info!("Copied docker-compose.yml to {:?}", config_dir);
     } else {
         log::debug!("docker-compose.yml already exists, skipping copy.");
