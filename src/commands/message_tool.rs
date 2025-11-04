@@ -2,13 +2,13 @@ use crate::{common::types::{ContentBlock, Message, Role}, rustbot::{bot::RustBot
 
 use super::{Command, REGISTRY};
 
-pub struct MessageCommand;
+pub struct MessageToolCommand;
 
-impl Command for MessageCommand {
-    fn name(&self) -> &str { "message" }
-    fn aliases(&self) -> Vec<&str> { vec!["msg"] }
-    fn desc(&self) -> &str { "Send a message to claude using anthropic api" }
-    fn help(&self) -> &str { "Usage: message <message>\nMessage does not need to be in quotation marks" }
+impl Command for MessageToolCommand {
+    fn name(&self) -> &str { "message-tool" }
+    fn aliases(&self) -> Vec<&str> { vec!["msg-tool", "msgt", "tool"] }
+    fn desc(&self) -> &str { "Send a message to claude using anthropic api with tools enable" }
+    fn help(&self) -> &str { "Usage: message-tool <message>\nMessage does not need to be in quotation marks" }
     fn exec(&self, _sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let user_message = Message{
             role: Role::User,
@@ -20,19 +20,23 @@ impl Command for MessageCommand {
 
         let sys_prompt: String = crate::common::config
             ::get_config("bot_config.json", "base_sys_prompt")?;
-        let response = bot.query_llm(&bot.get_messages(), &sys_prompt, 0.75)?;
+        let response = bot.query_llm_with_tools(&bot.get_messages(), &sys_prompt, 0.75)?;
 
-        let agent_message = Message {
+        let mut agent_message = Message {
             role: Role::Assistant,
             content: response.content
         };
-        bot.push_message(agent_message.clone());
 
         let response_text: String = match agent_message.content.first() {
             Some(ContentBlock::Text { text }) => text.into(),
             Some(_) => "Unexpected content block type".into(),
-            None => "Null response from agent".into()
+            None => {
+                agent_message.content.push(ContentBlock::Text { text: "Null".into() });
+                "Null response from agent".into()
+            }
         };
+
+        bot.push_message(agent_message.clone());
 
         Ok(Some(response_text))
     }
@@ -41,7 +45,7 @@ impl Command for MessageCommand {
 #[ctor::ctor]
 fn register() {
     REGISTRY.lock().unwrap().register(
-        "message".into(), 
-        || Box::new(MessageCommand),
+        "message-tool".into(), 
+        || Box::new(MessageToolCommand),
     );
 }

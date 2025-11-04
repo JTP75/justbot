@@ -8,6 +8,7 @@ mod common;
 mod commands;
 mod rustbot;
 mod connection;
+mod mcp;
 
 use std::process::Command;
 
@@ -28,11 +29,13 @@ fn handle_bot_command(sm: &mut SessionManager, bot: &mut RustBot, input: &str) -
 /// Program startup routine
 /// 
 /// - start Qdrant Vector DB using docker-compose script
+/// - start mcp server
 fn startup() -> Result<(),Box<dyn std::error::Error>> {
     log::info!("Entering startup...");
 
     let p_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
     let compose_file = p_dirs.config_dir().join("docker-compose.yml");
+
     let output = Command::new("docker-compose")
         .arg("-f")
         .arg(&compose_file)
@@ -144,6 +147,9 @@ fn main() {
             }
         }
     }
+
+    // drop bot
+    drop(bot);
 
     // save rustyline history
     let result = rl.save_history(&sm.data_dir.join("rustyline_history.txt"));

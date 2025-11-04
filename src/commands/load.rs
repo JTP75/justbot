@@ -1,6 +1,5 @@
-use anthropic::types::{ContentBlock, Role};
-
 use crate::rustbot::{bot::RustBot, session::SessionManager};
+use crate::common::types::{ContentBlock, Role};
 
 use super::{Command, REGISTRY};
 
@@ -26,9 +25,9 @@ impl Command for LoadCommand {
                             ContentBlock::Text { text } => {
                                 past_messages_display.push_str(match message.role { 
                                     Role::User => "\n\x1b[1;33m<<\x1b[0m ", 
-                                    Role::Assistant => "\n\x1b[1;32m>>\x1b[0m " 
+                                    Role::Assistant => "\n\x1b[1;32m>>\x1b[0m ",
                                 });
-                                past_messages_display.push_str(text)
+                                past_messages_display.push_str(&text)
                             },
                             _ => ()
                         }

@@ -1,13 +1,14 @@
 use std::{env, fs};
 use std::path::{Path, PathBuf};
 
-use anthropic::types::{ContentBlock, Message, MessageBuilder, MessagesResponse, Role};
 use chrono::{self, Local};
 
 use crate::commands::{Command, REGISTRY};
-use crate::connection::anthropic_client::AnthropicClient;
+use crate::common::types::{ContentBlock, Message, MessagesResponse, Role, ToolResultContentBlock};
+use crate::connection::anthropic_client::{AnthropicClient, ToolDefinition};
 use crate::connection::qdrant_client::QdrantClient;
 use crate::connection::voyage_client::VoyageClient;
+use crate::mcp::manager::McpManager;
 use crate::rustbot::session::SessionManager;
 
 // structs
@@ -17,8 +18,10 @@ pub struct RustBot {
 
     // immut fields
     name: String,
-
     client_mgr: ClientManager,
+
+    // mut fields
+    mcp_mgr: McpManager,
 
     // state
     topic: String,
@@ -56,15 +59,15 @@ impl RustBot {
     /// let bot = RustBot::new("name");
     /// ```
     pub fn new(name: impl Into<String>) -> Self {
-
-        Self { 
+        let mut bot = Self { 
             name: name.into(), 
-
             client_mgr: ClientManager {
                 chat_client: AnthropicClient::new().unwrap(),
                 vdb_client: QdrantClient::new().unwrap(),
                 embedding_client: VoyageClient::new().unwrap(),
             },
+
+            mcp_mgr: McpManager::new(),
             
             topic: "".into(),
             messages: vec![],
@@ -76,7 +79,17 @@ impl RustBot {
             _input_tokens: vec![],
             _output_tokens: vec![],
             _total_tokens: vec![],
+        };
+
+        if let Err(e) = bot.mcp_mgr.register_server(
+            "filesystem".into(), 
+            "npx",
+            &["-y", "@modelcontextprotocol/server-filesystem", "/home/pacel"]
+        ) {
+            log::warn!("Failed to register MCP server: {e}")
         }
+
+        bot
     }
 
     /// Get the name of this instance
@@ -119,7 +132,7 @@ impl RustBot {
     /// ```
     /// let messages = bot.get_messages();
     /// ```
-    pub fn get_messages(&self) -> Vec<anthropic::types::Message> { self.messages.clone() }
+    pub fn get_messages(&self) -> Vec<Message> { self.messages.clone() }
 
     /// Get a copy of the current motd
     /// 
@@ -227,6 +240,87 @@ impl RustBot {
             .block_on(self.client_mgr.call_model_callback(messages, sys_prompt, randomness))
     }
 
+    /// (Synchronous callback for `ClientManager::call_model_with_tools_callback()`)
+    /// 
+    /// Sends a list of messages to claude and awaits a response (blocking)
+    /// All tools registered in the McpManager are included in the request
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// let ans = bot.query_llm_with_tools(conversation, "You are a chatbot. Be nice!", 0.33)
+    /// assert!(ans.is_ok());
+    /// 
+    /// println!("{:?}", ans.unwrap());
+    /// // MessagesResponse(... content="Hello how are you?")
+    /// ```
+    pub fn query_llm_with_tools(&mut self, messages: &Vec<Message>, sys_prompt: &str, randomness: f64) 
+    -> Result<MessagesResponse,Box<dyn std::error::Error>> {
+        let rt = tokio::runtime::Runtime::new()?;
+        let tools = self.mcp_mgr.get_tools_as_anthropic();
+        let mut messages_copy = messages.clone();
+
+        for _i in 0..10 {
+            let response = rt.block_on(self.client_mgr
+                .call_model_with_tools_callback(&messages_copy, sys_prompt, &tools, randomness))?;
+
+            let tool_uses: Vec<_> = response.content.iter()
+                .filter_map(|cb| match cb {
+                    ContentBlock::ToolUse { id, name, input } => Some((
+                        id.clone(),
+                        name.clone(),
+                        input.clone(),
+                    )), _ => None,
+                }).collect();
+
+            if tool_uses.is_empty() {
+                log::info!("No tool uses requested");
+                return Ok(response);
+            }
+            
+            messages_copy.push(response.into());
+
+            log::info!("Executing {} tools...", tool_uses.len());
+
+            let mut content: Vec<ContentBlock> = vec![];
+            for (id, name, input) in tool_uses.iter() {
+                log::info!("Executing tool '{name}': {input}");
+                let output = match self.mcp_mgr.execute_tool(name, input.clone()) {
+                    Ok(Some(output)) => {
+                        log::info!("Tool '{}' executed successfully.\nOutput tokens (approx): {}", name, output.len()/4);
+                        if output.len()/4 > 100000 {
+                            format!("Tool '{}' execution failed: Too many tokens (~{})", name, output.len()/4)
+                        } else {
+                            output
+                        }
+                    },
+                    Ok(None) => {
+                        log::info!("Tool '{}' executed successfully.", name);
+                        format!("Tool '{}' executed successfully.", name)
+                    },
+                    Err(e) => {
+                        log::error!("Tool '{}' execution failed:\n{}", name, e);
+                        format!("Tool '{}' execution failed: {}", name, e)
+                    }
+                };
+
+                content.push(ContentBlock::ToolResult { 
+                    tool_use_id: id.into(), 
+                    content: vec![
+                        ToolResultContentBlock::Text { text: output },
+                    ]
+                });
+            }
+            let tool_result_msg = Message {
+                role: Role::User,
+                content,
+            };
+
+            messages_copy.push(tool_result_msg);
+        }
+        Err("too many iter".into())
+    }
+
     /// Generate an anthropic message with rag
     /// 
     /// The resulting Message struct has two content blocks:
@@ -255,16 +349,13 @@ impl RustBot {
         let json_context = runtime.block_on(self.client_mgr.query_vdb(collection_name, query))?;
         let context = serde_json::to_string_pretty(&json_context)?;
 
-        // build and return anthropic message object
-        let message = MessageBuilder::default()
-            .role(Role::User)
-            .content(vec![
+        Ok(Message {
+            role: Role::User,
+            content: vec![
                 ContentBlock::Text { text: query.into() },
                 ContentBlock::Text { text: context }
-            ])
-            .build()?;
-
-        Ok(message)
+            ]
+        })
     }
     
     /// Sets the topic field
@@ -336,6 +427,8 @@ impl RustBot {
         output
     }
 
+    /// todo move this somewhere else
+    /// 
     /// Validates a file path string for writing, then returns fully resolved absolute path
     /// 
     /// - The file does not need to exist, but its parent directories must exist
@@ -435,6 +528,12 @@ impl ClientManager {
     pub async fn call_model_callback(&self, messages: &Vec<Message>, sys_prompt: &str, randomness: f64) 
     -> Result<MessagesResponse,Box<dyn std::error::Error>> {
         self.chat_client.call_model(messages, sys_prompt, randomness).await
+    }
+
+    /// callback for `AnthropicClient::call_model_with_tools`
+    pub async fn call_model_with_tools_callback(&self, messages: &Vec<Message>, sys_prompt: &str, tools: &Vec<ToolDefinition>, randomness: f64) 
+    -> Result<MessagesResponse,Box<dyn std::error::Error>> {
+        self.chat_client.call_model_with_tools(messages, sys_prompt, tools, randomness).await
     }
 
     // routines

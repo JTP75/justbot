@@ -1,7 +1,6 @@
-use anthropic::types::{ContentBlock, MessageBuilder, Role};
 use chrono::Local;
 
-use crate::rustbot::{bot::RustBot, session::SessionManager};
+use crate::{common::types::{ContentBlock, Message, Role}, rustbot::{bot::RustBot, session::SessionManager}};
 
 use super::{Command, REGISTRY};
 
@@ -25,18 +24,18 @@ impl Command for MotdCommand {
             let mut convo_copy = bot.get_messages();
             let motd_prompt: String = crate::common::config
                 ::get_config("prompts.json", "motd")?;
-            let user_message = MessageBuilder::default()
-                .role(Role::User)
-                .content(vec![ContentBlock::Text {
+            let user_message = Message {
+                role: Role::User,
+                content: vec![ContentBlock::Text {
                     text: format!("Today is {}. {}", todays_date.format("%A, %m/%d/%Y"), motd_prompt)
-                }])
-                .build()?;
+                }]
+            };
             convo_copy.push(user_message);
 
             let response = bot.query_llm(&convo_copy, "", 1.0)?;
             let response_text: String = match response.content.first() {
                 Some(ContentBlock::Text { text }) => text.into(),
-                Some(ContentBlock::Image { source: _, media_type: _, data: _ }) => "Unexpected content block type".into(),
+                Some(_) => "Unexpected content block type".into(),
                 None => "Null response from agent".into()
             };
 

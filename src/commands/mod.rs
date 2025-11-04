@@ -59,6 +59,7 @@ pub mod hello;
 pub mod help;
 pub mod message;
 pub mod message_rag;
+pub mod message_tool;
 pub mod motd;
 pub mod store;
 pub mod whereami;

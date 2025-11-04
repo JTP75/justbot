@@ -1,6 +1,4 @@
-use anthropic::types::{ContentBlock, MessageBuilder, Role};
-
-use crate::rustbot::{bot::RustBot, session::SessionManager};
+use crate::{common::types::{ContentBlock, Message, Role}, rustbot::{bot::RustBot, session::SessionManager}};
 
 use super::{Command, REGISTRY};
 
@@ -25,15 +23,15 @@ impl Command for MessageRagCommand {
             ::get_config("bot_config.json", "rag_sys_prompt")?;
         let response = bot.query_llm(&bot.get_messages(), &sys_prompt, 0.75)?;
 
-        let agent_message = MessageBuilder::default()
-            .role(Role::Assistant)
-            .content(response.content)
-            .build()?;
+        let agent_message = Message {
+            role: Role::Assistant,
+            content: response.content
+        };
         bot.push_message(agent_message.clone());
 
         let response_text: String = match agent_message.content.first() {
             Some(ContentBlock::Text { text }) => text.into(),
-            Some(ContentBlock::Image { source: _, media_type: _, data: _ }) => "Unexpected content block type".into(),
+            Some(_) => "Unexpected content block type".into(),
             None => "Null response from agent".into()
         };
 

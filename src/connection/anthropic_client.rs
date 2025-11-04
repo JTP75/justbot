@@ -1,10 +1,17 @@
-use anthropic::types::{ContentBlock, Message, MessagesRequestBuilder, MessagesResponse};
 use directories::ProjectDirs;
 use dotenvy;
 
 use reqwest::{Client, ClientBuilder};
+use serde::{Deserialize, Serialize};
 
-use crate::common::config::{APPLICATION, ORGANIZATION, QUALIFIER};
+use crate::common::{config::{APPLICATION, ORGANIZATION, QUALIFIER}, types::{ContentBlock, Message, MessagesResponse}};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ToolDefinition {
+    pub name: String,
+    pub description: String,
+    pub input_schema: serde_json::Value,
+}
 
 #[derive(Debug)]
 pub struct AnthropicClient {
@@ -56,23 +63,63 @@ impl AnthropicClient {
     }
 
     /// Sends a list of messages, system prompt, and randomness (temperature) to the LLM and returns the response
-    pub async fn call_model(&self, messages: &Vec<Message>, sys_prompt: &str, randomness: f64) -> Result<MessagesResponse,Box<dyn std::error::Error>> {
-        let request = MessagesRequestBuilder::default()
-            .model(&self.model)
-            .max_tokens(self.max_tokens)
-            .temperature(randomness)
-            .messages(&messages[..])
-            .system(sys_prompt)
-            .build()?;
+    pub async fn call_model(&self, messages: &Vec<Message>, sys_prompt: &str, randomness: f64) 
+    -> Result<MessagesResponse,Box<dyn std::error::Error>> {
+
+        let request_json = serde_json::json!({
+            "model": &self.model, 
+            "max_tokens": self.max_tokens, 
+            "temperature": randomness,
+            "messages": &messages[..],
+            "stream": false, 
+            "system": sys_prompt,
+        });
 
         let response_json = self.client
             .post(format!("{}/messages", &self.url))
             .header("x-api-key", &self.api_key)
             .header("anthropic-version", &self.api_version)
             .header("content-type", "application/json")
-            .json(&serde_json::json!(request))
+            .json(&request_json)
             .send().await?
             .json::<serde_json::Value>().await?;
+
+        // think about adding prompt caching to sys prompts
+
+        let response_map = response_json.as_object()
+            .ok_or("Response was null")?;
+
+        if response_map.contains_key("error") {
+            Err(format!("{}", response_map.get("error").ok_or("Error is null")?).into())
+        } else {
+            Ok(serde_json::from_value(response_json)?)
+        }
+    }
+
+    /// Sends a list of messages, system prompt, and randomness (temperature) to the LLM and returns the response
+    pub async fn call_model_with_tools(&self, messages: &Vec<Message>, sys_prompt: &str, tools: &Vec<ToolDefinition>, randomness: f64) 
+    -> Result<MessagesResponse,Box<dyn std::error::Error>> {
+
+        let request_json = serde_json::json!({
+            "model": &self.model, 
+            "max_tokens": self.max_tokens, 
+            "temperature": randomness,
+            "messages": &messages[..],
+            "stream": false, 
+            "system": sys_prompt,
+            "tools": &tools[..]
+        });
+
+        let response_json = self.client
+            .post(format!("{}/messages", &self.url))
+            .header("x-api-key", &self.api_key)
+            .header("anthropic-version", &self.api_version)
+            .header("content-type", "application/json")
+            .json(&request_json)
+            .send().await?
+            .json::<serde_json::Value>().await?;
+
+        // think about adding prompt caching to sys prompts
 
         let response_map = response_json.as_object()
             .ok_or("Response was null")?;

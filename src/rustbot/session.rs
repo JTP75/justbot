@@ -1,10 +1,9 @@
 use std::{fs, path::PathBuf};
 
-use anthropic::types::{ContentBlock, Message, MessageBuilder, Role};
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 
-use crate::{common::config::{APPLICATION, ORGANIZATION, QUALIFIER}, rustbot::bot::RustBot};
+use crate::{common::{config::{APPLICATION, ORGANIZATION, QUALIFIER}, types::{ContentBlock, Message, Role}}, rustbot::bot::RustBot};
 
 /// Serializable struct that can be saved to a json file
 /// 
@@ -81,20 +80,20 @@ impl SessionManager {
 
     fn generate_topic(&self, bot: &RustBot) -> Result<String, Box<dyn std::error::Error>> {
         let mut convo_copy = bot.get_messages();
-        let topic_prompt = MessageBuilder::default()
-            .role(Role::User)
-            .content(vec![ContentBlock::Text { 
+        let topic_prompt = Message {
+            role: Role::User,
+            content: vec![ContentBlock::Text { 
                 text: crate::common::config
                     ::get_config("prompts.json","generate_topic")?
-            }])
-            .build()?;
+            }]
+        };
         convo_copy.push(topic_prompt);
         
         let topic_response = bot.query_llm(&convo_copy, "", 0.0)?;
 
         match topic_response.content.first() {
             Some(ContentBlock::Text { text }) => Ok(text.chars().filter(|c| c.is_alphanumeric() || c.is_whitespace()).collect()),
-            Some(ContentBlock::Image { source: _, media_type: _, data: _ }) => Err("Unexpected content block type".into()),
+            Some(_) => Err("Unexpected content block type".into()),
             None => Err("Response content is empty".into())
         }
     }

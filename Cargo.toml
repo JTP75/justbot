@@ -5,7 +5,6 @@ edition = "2024"
 license = "MIT"
 
 [dependencies]
-anthropic = "0.0.8"
 chrono = { version = "0.4.42", features = ["serde"] }
 ctor = "0.6.0"
 directories = "6.0.0"
