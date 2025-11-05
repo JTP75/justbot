@@ -11,7 +11,7 @@ mod connection;
 mod mcp;
 mod tools;
 
-use std::process::Command;
+use std::{process::Command, sync::{Arc, atomic::{AtomicBool, Ordering}}, thread};
 
 use directories::ProjectDirs;
 use rustyline::{self,error::ReadlineError};
@@ -78,6 +78,19 @@ fn shutdown() -> Result<(),Box<dyn std::error::Error>> {
     Ok(())
 }
 
+pub fn spinner_thread(message: &str, stop_flag: Arc<AtomicBool>) {
+    let spinner = vec!["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+    let mut i = 0;
+    while !stop_flag.load(Ordering::Relaxed) {
+        print!("\r{} {}", spinner[i%spinner.len()], message);
+        std::io::Write::flush(&mut std::io::stdout()).unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(80));
+        i += 1;
+    }
+    print!("\r");
+    std::io::Write::flush(&mut std::io::stdout()).unwrap();
+}
+
 fn main() {
 
     // setup env logger
@@ -126,16 +139,29 @@ fn main() {
             Ok(line) => {
                 let tokens: Vec<_> = line.split_whitespace().collect();
                 let first = match tokens.len() { 0 => "", _ => tokens[0] };
+
+                let ssf = Arc::new(AtomicBool::new(false));
+                let ssf_copy = ssf.clone();
+                let message = "Thinking...";
+                let spinner = thread::spawn(move || spinner_thread(message, ssf_copy));
+
                 match first {
                     "exit" | "wexit" | "q" | "wq" => {
-                        log::info!("Terminating command called");
                         let response = handle_bot_command(&mut sm, &mut bot, &line);
+
+                        ssf.store(true, Ordering::Relaxed);
+                        let _ = spinner.join();
+
                         if let Some(r) = response { println!("{}", r); }
                         break;
                     },
                     _ => {
                         let _ = rl.add_history_entry(&line);
                         let response = handle_bot_command(&mut sm, &mut bot, &line);
+
+                        ssf.store(true, Ordering::Relaxed);
+                        let _ = spinner.join();
+
                         if let Some(r) = response { println!("{}", r); }
                     },
                 }
