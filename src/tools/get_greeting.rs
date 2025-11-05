@@ -5,7 +5,7 @@ use super::{Tool, REGISTRY};
 pub struct GetGreetingTool;
 
 impl Tool for GetGreetingTool {
-    fn name(&self) -> &str { "custom_get_greeting" }
+    fn name(&self) -> &str { "custom-misc-get_greeting" }
     fn description(&self) -> &str { "Retrieves a friendly greeting" }
     fn input_schema(&self) -> ToolInputSchema { 
         ToolInputSchemaBuilder::default()
@@ -25,7 +25,7 @@ impl Tool for GetGreetingTool {
 #[ctor::ctor]
 fn register() {
     REGISTRY.lock().unwrap().register(
-        "custom_get_greeting".into(), 
+        "custom-misc-get_greeting".into(), 
         || Box::new(GetGreetingTool),
     );
 }

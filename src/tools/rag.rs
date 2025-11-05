@@ -5,7 +5,7 @@ use super::{Tool, REGISTRY};
 pub struct RagTool;
 
 impl Tool for RagTool {
-    fn name(&self) -> &str { "custom/rag/text" }
+    fn name(&self) -> &str { "custom-rag-text" }
     fn description(&self) -> &str { "This is a RAG tool that retrieves text documents from a vector database using semantic search. It returns text data and a score for each retrieved document." }
     fn input_schema(&self) -> ToolInputSchema { 
         ToolInputSchemaBuilder::default()
@@ -31,7 +31,7 @@ impl Tool for RagTool {
 #[ctor::ctor]
 fn register() {
     REGISTRY.lock().unwrap().register(
-        "custom/rag/text".into(), 
+        "custom-rag-text".into(), 
         || Box::new(RagTool),
     );
 }
