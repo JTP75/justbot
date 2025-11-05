@@ -33,9 +33,9 @@ impl ToolManager {
         }
     }
 
-    pub fn register_mcp_server(&mut self, name: String, command: &str, args: &[&str]) 
+    pub fn register_mcp_server(&mut self, name: String, command: &str, args: &[&str], env: Option<HashMap<String, String>>) 
     -> Result<(), Box<dyn std::error::Error>> {
-        let mut mcp_client = McpClient::new(command, args)?;
+        let mut mcp_client = McpClient::new(command, args, env)?;
         let mcp_tools = mcp_client.list_tools()?;
 
         log::info!("Registered {} tools from MCP server '{}'", mcp_tools.len(), name);

@@ -42,6 +42,7 @@ pub struct McpServerConfig {
     pub name: String,
     pub command: String,
     pub args: Vec<String>,
+    pub env: Option<std::collections::HashMap<String,String>>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Default)]

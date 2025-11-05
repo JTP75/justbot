@@ -1,6 +1,5 @@
 use std::{
-    io::{BufRead, BufReader, BufWriter, Write}, 
-    process::{Child, ChildStdin, ChildStdout, Command, Stdio}, time::Duration
+    collections::HashMap, io::{BufRead, BufReader, BufWriter, Write}, process::{Child, ChildStdin, ChildStdout, Command, Stdio}, time::Duration
 };
 
 use serde_json::Value;
@@ -22,13 +21,18 @@ impl Drop for McpClient {
 }
 
 impl McpClient {
-    pub fn new(command: &str, args: &[&str]) -> Result<Self, Box<dyn std::error::Error>> {
-        let mut process = Command::new(command)
+    pub fn new(command: &str, args: &[&str], env: Option<HashMap<String, String>>) 
+    -> Result<Self, Box<dyn std::error::Error>> {
+        let mut command_obj = Command::new(command);
+        command_obj
             .args(args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::inherit())
-            .spawn()?;
+            .stderr(Stdio::inherit());
+        for (key,value) in env.unwrap_or_default() {
+            command_obj.env(key, value);
+        }
+        let mut process = command_obj.spawn()?;
         let reader = BufReader::new(process.stdout.take().unwrap());
         let writer = BufWriter::new(process.stdin.take().unwrap());
         let id = 0;

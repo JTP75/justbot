@@ -21,9 +21,9 @@ pub struct RustBot {
 
     // immut fields
     name: String,
-    client_mgr: ClientManager,
 
     // mut fields
+    client_mgr: ClientManager,
     tool_mgr: ToolManager,
 
     // state
@@ -92,10 +92,12 @@ impl RustBot {
         let mcp_config: McpConfig = serde_json::from_str(&json).unwrap_or_default();
         for mcp_server in mcp_config.mcp_servers {
             let args: Vec<&str> = mcp_server.args.iter().map(|s| s.as_str()).collect();
+            // let env: Option<HashMap<String, String>> = mcp_server.env;
             if let Err(e) = bot.tool_mgr.register_mcp_server(
                 mcp_server.name.clone(), 
                 &mcp_server.command, 
-                &args
+                &args,
+                mcp_server.env
             ) {
                 log::error!("Failed to register server '{}':\n{}", mcp_server.name, e);
             } else {
@@ -257,8 +259,6 @@ impl RustBot {
             .block_on(self.client_mgr.call_model_callback(messages, sys_prompt, randomness))
     }
 
-    /// (Synchronous callback for `ClientManager::call_model_with_tools_callback()`)
-    /// 
     /// Sends a list of messages to claude and awaits a response (blocking)
     /// All tools registered in the McpManager are included in the request
     /// 
@@ -353,6 +353,22 @@ impl RustBot {
         }
         Err("too many iter".into())
     }
+
+    /// (Synchronous callback for `GoogleClient::retrieve_events_range_callback()`)
+    /// 
+    /// todo
+    // pub fn get_calendar_events_range<Tz>(
+    //     &mut self, 
+    //     calendar_id: impl Into<String>, 
+    //     start: chrono::DateTime<Tz>, 
+    //     until: chrono::DateTime<Tz>
+    // ) -> Result<Vec<CalendarEvent>, Box<dyn std::error::Error>> 
+    // where Tz: chrono::TimeZone + Send + Sync
+    // {
+    //     let events = tokio::runtime::Runtime::new()?
+    //         .block_on(self.client_mgr.retrieve_events_range_callback(calendar_id, start, until))?;
+    //     Ok(events)
+    // }
 
     /// todo
     pub fn retrieve_from_vdb(&self, collection_name: &str, query: &str, search_limit: Option<u64>)
@@ -572,10 +588,28 @@ impl ClientManager {
     }
 
     /// callback for `AnthropicClient::call_model_with_tools`
-    pub async fn call_model_with_tools_callback(&self, messages: &Vec<Message>, sys_prompt: &str, tools: &Vec<ToolDefinition>, randomness: f64) 
-    -> Result<MessagesResponse,Box<dyn std::error::Error>> {
+    pub async fn call_model_with_tools_callback(
+        &self, 
+        messages: &Vec<Message>, 
+        sys_prompt: &str, 
+        tools: &Vec<ToolDefinition>, 
+        randomness: f64
+    ) -> Result<MessagesResponse,Box<dyn std::error::Error>> 
+    {
         self.chat_client.call_model_with_tools(messages, sys_prompt, tools, randomness).await
     }
+
+    /// callback for `GoogleClient::retrieve_events_range`
+    // pub async fn retrieve_events_range_callback<Tz>(
+    //     &mut self, 
+    //     calendar_id: impl Into<String>, 
+    //     start: chrono::DateTime<Tz>, 
+    //     until: chrono::DateTime<Tz>
+    // ) -> Result<Vec<CalendarEvent>, Box<dyn std::error::Error>> 
+    // where Tz: chrono::TimeZone + Send + Sync 
+    // {
+    //     self.calendar_client.retrieve_events_range(calendar_id, start, until).await
+    // }
 
     // routines
     
