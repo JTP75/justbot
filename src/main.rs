@@ -97,8 +97,9 @@ fn main() {
     let _ = env_logger::builder().try_init();
 
     // call startup checks
+    println!("\x1b[1;34m>>\x1b[0m Starting up...");
     if let Err(e) = startup() {
-        println!("\x1b[1;31mStartup failed.\x1b[0m {e}");
+        log::error!("Startup failed: {e}");
         return;
     }
 
@@ -137,14 +138,13 @@ fn main() {
     loop {
         match rl.readline("\x1b[1;33m<<\x1b[0m ") {
             Ok(line) => {
-                let tokens: Vec<_> = line.split_whitespace().collect();
-                let first = match tokens.len() { 0 => "", _ => tokens[0] };
-
                 let ssf = Arc::new(AtomicBool::new(false));
                 let ssf_copy = ssf.clone();
                 let message = "Thinking...";
                 let spinner = thread::spawn(move || spinner_thread(message, ssf_copy));
 
+                let tokens: Vec<_> = line.split_whitespace().collect();
+                let first = match tokens.len() { 0 => "", _ => tokens[0] };
                 match first {
                     "exit" | "wexit" | "q" | "wq" => {
                         let response = handle_bot_command(&mut sm, &mut bot, &line);

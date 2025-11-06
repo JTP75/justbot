@@ -62,6 +62,8 @@ impl AnthropicClient {
             ).sum()
     }
 
+    // todo we can probably collapse these two functions into one with an Option<Vec<ToolDefinition>>
+
     /// Sends a list of messages, system prompt, and randomness (temperature) to the LLM and returns the response
     pub async fn call_model(&self, messages: &Vec<Message>, sys_prompt: &str, randomness: f64) 
     -> Result<MessagesResponse,Box<dyn std::error::Error>> {
@@ -72,10 +74,13 @@ impl AnthropicClient {
             "temperature": randomness,
             "messages": &messages[..],
             "stream": false, 
-            "system": sys_prompt,
+            "system": build_ephemeral_sys_prompt(sys_prompt),
         });
 
-        log::info!("Input tokens (approx): {}", self.estimate_token_count_text(messages));
+        log::info!("Input tokens (approx): {}", 
+            self.estimate_token_count_text(messages)
+                + sys_prompt.len()/4
+        );
 
         let response_json = self.client
             .post(format!("{}/messages", &self.url))
@@ -94,7 +99,12 @@ impl AnthropicClient {
         if response_map.contains_key("error") {
             Err(format!("{}", response_map.get("error").ok_or("Error is null")?).into())
         } else {
-            Ok(serde_json::from_value(response_json)?)
+            let t_in = response_map.get("usage").unwrap().get("input_tokens").unwrap().as_u64().unwrap();
+            let t_out = response_map.get("usage").unwrap().get("output_tokens").unwrap().as_u64().unwrap();
+            log::info!("Input tokens:  {}", t_in);
+            log::info!("Output tokens: {}", t_out);
+            let response = serde_json::from_value(response_json)?;
+            Ok(response)
         }
     }
 
@@ -108,11 +118,15 @@ impl AnthropicClient {
             "temperature": randomness,
             "messages": &messages[..],
             "stream": false, 
-            "system": sys_prompt,
-            "tools": &tools[..]
+            "system": build_ephemeral_sys_prompt(sys_prompt),
+            "tools": build_ephemeral_tools(&tools[..])
         });
 
-        log::info!("Input tokens (approx): {}", self.estimate_token_count_text(messages));
+        log::info!("Input tokens (approx): {}", 
+            self.estimate_token_count_text(messages)
+                + sys_prompt.len()/4
+                + tools.iter().map(|t| t.description.len()/4).sum::<usize>()
+        );
 
         let response_json = self.client
             .post(format!("{}/messages", &self.url))
@@ -123,15 +137,41 @@ impl AnthropicClient {
             .send().await?
             .json::<serde_json::Value>().await?;
 
-        // think about adding prompt caching to sys prompts
-
         let response_map = response_json.as_object()
             .ok_or("Response was null")?;
 
         if response_map.contains_key("error") {
             Err(format!("{}", response_map.get("error").ok_or("Error is null")?).into())
         } else {
-            Ok(serde_json::from_value(response_json)?)
+            let t_in = response_map.get("usage").unwrap().get("input_tokens").unwrap().as_u64().unwrap();
+            let t_out = response_map.get("usage").unwrap().get("output_tokens").unwrap().as_u64().unwrap();
+            log::info!("Input tokens:  {}", t_in);
+            log::info!("Output tokens: {}", t_out);
+            let response = serde_json::from_value(response_json)?;
+            Ok(response)
         }
     }
+}
+
+fn build_ephemeral_sys_prompt(sys_prompt: &str) -> serde_json::Value {
+    serde_json::json!([{
+        "type": "text",
+        "text": sys_prompt,
+        "cache_control": { "type": "ephemeral" }
+    }])
+}
+
+fn build_ephemeral_tools(tools: &[ToolDefinition]) -> serde_json::Value {
+    let mut tool_defs: Vec<serde_json::Value> = tools.iter()
+        .map(|t| serde_json::json!(t))
+        .collect();
+
+    if let Some(obj) = tool_defs.last_mut().and_then(|v| v.as_object_mut()) {
+        obj.insert(
+            "cache_control".to_string(),
+            serde_json::json!({ "type": "ephemeral" }),
+        );
+    }
+
+    serde_json::Value::Array(tool_defs)
 }
