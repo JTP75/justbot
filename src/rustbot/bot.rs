@@ -320,7 +320,7 @@ impl RustBot {
     pub fn query_llm(&self, messages: &Vec<Message>, sys_prompt: &str, randomness: f64) 
     -> Result<MessagesResponse,Box<dyn std::error::Error>> {
         tokio::runtime::Runtime::new()?
-            .block_on(self.client_mgr.call_model_callback(messages, sys_prompt, randomness))
+            .block_on(self.client_mgr.call_model_callback(messages, sys_prompt, None, randomness))
     }
 
     /// Sends a list of messages to claude and awaits a response (blocking)
@@ -347,7 +347,7 @@ impl RustBot {
         for _i in 0..10 {
             // get ai response
             let response = rt.block_on(self.client_mgr
-                .call_model_with_tools_callback(&messages_copy, sys_prompt, &tooldefs, randomness))?;
+                .call_model_callback(&messages_copy, sys_prompt, Some(&tooldefs), randomness))?;
 
             let tool_uses: Vec<_> = response.content.iter()
                 .filter_map(|cb| match cb {
@@ -415,7 +415,7 @@ impl RustBot {
 
             messages_copy.push(tool_result_msg);
         }
-        Err("too many iter".into())
+        Err("Too many ".into())
     }
 
     /// (Synchronous callback for `GoogleClient::retrieve_events_range_callback()`)
@@ -646,21 +646,9 @@ impl ClientManager {
     // callbacks
 
     /// callback for `AnthropicClient::call_model`
-    pub async fn call_model_callback(&self, messages: &Vec<Message>, sys_prompt: &str, randomness: f64) 
+    pub async fn call_model_callback(&self, messages: &Vec<Message>, sys_prompt: &str, tools: Option<&Vec<ToolDefinition>>, randomness: f64) 
     -> Result<MessagesResponse,Box<dyn std::error::Error>> {
-        self.chat_client.call_model(messages, sys_prompt, randomness).await
-    }
-
-    /// callback for `AnthropicClient::call_model_with_tools`
-    pub async fn call_model_with_tools_callback(
-        &self, 
-        messages: &Vec<Message>, 
-        sys_prompt: &str, 
-        tools: &Vec<ToolDefinition>, 
-        randomness: f64
-    ) -> Result<MessagesResponse,Box<dyn std::error::Error>> 
-    {
-        self.chat_client.call_model_with_tools(messages, sys_prompt, tools, randomness).await
+        self.chat_client.call_model(messages, sys_prompt, tools, randomness).await
     }
 
     /// callback for `GoogleClient::retrieve_events_range`

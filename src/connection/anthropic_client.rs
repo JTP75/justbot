@@ -65,7 +65,13 @@ impl AnthropicClient {
     // todo we can probably collapse these two functions into one with an Option<Vec<ToolDefinition>>
 
     /// Sends a list of messages, system prompt, and randomness (temperature) to the LLM and returns the response
-    pub async fn call_model(&self, messages: &Vec<Message>, sys_prompt: &str, randomness: f64) 
+    pub async fn call_model(
+        &self, 
+        messages: &Vec<Message>, 
+        sys_prompt: &str, 
+        tools: Option<&Vec<ToolDefinition>>, 
+        randomness: f64
+    ) 
     -> Result<MessagesResponse,Box<dyn std::error::Error>> {
 
         let sp = if sys_prompt.is_empty() { 
@@ -74,54 +80,14 @@ impl AnthropicClient {
             build_ephemeral_sys_prompt(sys_prompt) 
         };
 
-        let request_json = serde_json::json!({
-            "model": &self.model, 
-            "max_tokens": self.max_tokens, 
-            "temperature": randomness,
-            "messages": &messages[..],
-            "stream": false, 
-            "system": sp,
-        });
+        let mut token_estimate = self.estimate_token_count_text(messages)
+                + sys_prompt.len()/4;
 
-        log::info!("Input tokens (approx): {}", 
-            self.estimate_token_count_text(messages)
-                + sys_prompt.len()/4
-        );
-
-        let response_json = self.client
-            .post(format!("{}/messages", &self.url))
-            .header("x-api-key", &self.api_key)
-            .header("anthropic-version", &self.api_version)
-            .header("content-type", "application/json")
-            .json(&request_json)
-            .send().await?
-            .json::<serde_json::Value>().await?;
-
-        // think about adding prompt caching to sys prompts
-
-        let response_map = response_json.as_object()
-            .ok_or("Response was null")?;
-
-        if response_map.contains_key("error") {
-            Err(format!("{}", response_map.get("error").ok_or("Error is null")?).into())
+        let t = if let Some(t) = tools {
+            token_estimate += t.iter().map(|t| t.description.len()/4).sum::<usize>();
+            Some(build_ephemeral_tools(&t))
         } else {
-            let t_in = response_map.get("usage").unwrap().get("input_tokens").unwrap().as_u64().unwrap();
-            let t_out = response_map.get("usage").unwrap().get("output_tokens").unwrap().as_u64().unwrap();
-            log::info!("Input tokens:  {}", t_in);
-            log::info!("Output tokens: {}", t_out);
-            let response = serde_json::from_value(response_json)?;
-            Ok(response)
-        }
-    }
-
-    /// Sends a list of messages, system prompt, and randomness (temperature) to the LLM and returns the response
-    pub async fn call_model_with_tools(&self, messages: &Vec<Message>, sys_prompt: &str, tools: &Vec<ToolDefinition>, randomness: f64) 
-    -> Result<MessagesResponse,Box<dyn std::error::Error>> {
-
-        let sp = if sys_prompt.is_empty() { 
-            serde_json::json!("") 
-        } else { 
-            build_ephemeral_sys_prompt(sys_prompt) 
+            None
         };
 
         let request_json = serde_json::json!({
@@ -131,14 +97,10 @@ impl AnthropicClient {
             "messages": &messages[..],
             "stream": false, 
             "system": sp,
-            "tools": build_ephemeral_tools(&tools[..])
+            "tools": t
         });
 
-        log::info!("Input tokens (approx): {}", 
-            self.estimate_token_count_text(messages)
-                + sys_prompt.len()/4
-                + tools.iter().map(|t| t.description.len()/4).sum::<usize>()
-        );
+        log::info!("Input tokens (approx): {}", token_estimate);
 
         let response_json = self.client
             .post(format!("{}/messages", &self.url))
