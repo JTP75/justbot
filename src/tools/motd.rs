@@ -37,7 +37,7 @@ impl Tool for SetMotdTool {
     fn description(&self) -> &str { "Sets and stores a new message of the day." }
     fn input_schema(&self) -> ToolInputSchema { 
         ToolInputSchemaBuilder::default()
-            .property("new_motd", "string", "The new message of the day to be stored. It should be creative, funny, interesting, or some combination of those things.")
+            .property("new_motd", "string", "The new message of the day to be stored. This should always be one sentence. It should be creative, funny, interesting, or some combination of those things.")
             .build()
             .unwrap()
     }
