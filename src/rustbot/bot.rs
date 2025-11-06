@@ -63,10 +63,8 @@ impl RustBot {
     /// ```
     pub fn new(name: impl Into<String>) -> Self {
 
-        let p_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
-        let server_file = p_dirs.config_dir().join("mcp_servers.json");
 
-        let mut bot = Self { 
+        Self { 
             name: name.into(), 
             client_mgr: ClientManager {
                 chat_client: AnthropicClient::new().unwrap(),
@@ -86,14 +84,42 @@ impl RustBot {
             _input_tokens: vec![],
             _output_tokens: vec![],
             _total_tokens: vec![],
-        };
+        }
+    }
 
+    pub fn startup(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+
+        log::info!("Entering bot startup...");
+        let p_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
+
+        // start docker container services
+        print!("\x1b[1;34m>>\x1b[0m Starting docker-compose services... ");
+        
+        let compose_file = p_dirs.config_dir().join("docker-compose.yml");
+        let output = std::process::Command::new("docker-compose")
+            .arg("-f")
+            .arg(&compose_file)
+            .arg("up")
+            .arg("-d")
+            .output()?;
+        if !output.status.success() {
+            return Err(format!(
+                "docker-compose up service(s) failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            ).into());
+        }
+
+        println!("Done!");
+
+        // start mcp servers
+        println!("\x1b[1;34m>>\x1b[0m Registering and Starting MCP servers... ");
+
+        let server_file = p_dirs.config_dir().join("mcp_servers.json");
         let json = fs::read_to_string(server_file).unwrap();
         let mcp_config: McpConfig = serde_json::from_str(&json).unwrap_or_default();
         for mcp_server in mcp_config.mcp_servers {
             let args: Vec<&str> = mcp_server.args.iter().map(|s| s.as_str()).collect();
-            // let env: Option<HashMap<String, String>> = mcp_server.env;
-            if let Err(e) = bot.tool_mgr.register_mcp_server(
+            if let Err(e) = self.tool_mgr.register_mcp_server(
                 mcp_server.name.clone(), 
                 &mcp_server.command, 
                 &args,
@@ -105,7 +131,45 @@ impl RustBot {
             }
         }
 
-        bot
+        println!("\x1b[1;34m>>\x1b[0m MCP servers done!");
+        
+        log::info!("Startup complete!");
+        
+        Ok(())
+    }
+
+    pub fn shutdown(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        log::info!("Entering shutdown...");
+
+        // mcp servers will not? die on being dropped
+        // kill him now.
+        println!("\x1b[1;34m>>\x1b[0m Kill MCP server processes... ");
+
+        self.tool_mgr.kill_mcp_servers();
+        
+        println!("\x1b[1;34m>>\x1b[0m MCP server processes stopped.");
+
+        // stop docker container services
+        println!("\x1b[1;34m>>\x1b[0m Shutting down docker-compose services... ");
+
+        let p_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
+        let compose_file = p_dirs.config_dir().join("docker-compose.yml");
+        let output = std::process::Command::new("docker-compose")
+            .arg("-f")
+            .arg(&compose_file)
+            .arg("down")
+            .output()?;
+        if !output.status.success() {
+            return Err(format!(
+                "docker-compose down service(s) failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            ).into());
+        }
+        
+        println!("\x1b[1;34m>>\x1b[0m Docker-compose services stopped.");
+
+        log::info!("Shutdown complete!");
+        Ok(())
     }
 
     /// Get the name of this instance
