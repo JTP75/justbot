@@ -83,22 +83,27 @@ impl AnthropicClient {
         let mut token_estimate = self.estimate_token_count_text(messages)
                 + sys_prompt.len()/4;
 
-        let t = if let Some(t) = tools {
+        let request_json = if let Some(t) = tools {
             token_estimate += t.iter().map(|t| t.description.len()/4).sum::<usize>();
-            Some(build_ephemeral_tools(&t))
+            serde_json::json!({
+                "model": &self.model, 
+                "max_tokens": self.max_tokens, 
+                "temperature": randomness,
+                "messages": &messages[..],
+                "stream": false, 
+                "system": sp,
+                "tools": build_ephemeral_tools(t)
+            })
         } else {
-            None
+            serde_json::json!({
+                "model": &self.model, 
+                "max_tokens": self.max_tokens, 
+                "temperature": randomness,
+                "messages": &messages[..],
+                "stream": false, 
+                "system": sp,
+            })
         };
-
-        let request_json = serde_json::json!({
-            "model": &self.model, 
-            "max_tokens": self.max_tokens, 
-            "temperature": randomness,
-            "messages": &messages[..],
-            "stream": false, 
-            "system": sp,
-            "tools": t
-        });
 
         log::info!("Input tokens (approx): {}", token_estimate);
 
