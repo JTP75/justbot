@@ -39,6 +39,7 @@ fn main() {
     let mut sm = SessionManager::new();
     println!("\x1b[1;34m>>\x1b[0m Bot and session initialized!");
 
+    print_big_banner_puetce();
     print_big_banner();
     
     // print initital message, todays date, and motd
@@ -207,7 +208,7 @@ fn print_big_banner() -> () {
     }
 }
 
-fn _print_big_banner_puetce() {
+fn print_big_banner_puetce() {
     // developers note: this doesnt mean anything, github copilot just hallucinated it and i thought it looked cool
     println!(r#"
 ██████╗ ██╗   ██╗███████╗████████╗ ██████╗███████╗
