@@ -69,6 +69,7 @@ pub mod set_collection;
 pub mod get_tools;
 
 // session
+pub mod new;
 pub mod save;
 pub mod load;
 pub mod list;

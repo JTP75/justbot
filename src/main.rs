@@ -1,6 +1,6 @@
 //! Main entry point for rustbot application
 //! 
-//! - Handles startup/shutdown routines and the main CLI loop
+//! - Handles the main CLI loop
 //! - Delegates command handling to RustBot and SessionManager
 //! - Uses rustyline for CLI input with history support
 
