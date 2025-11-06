@@ -68,13 +68,19 @@ impl AnthropicClient {
     pub async fn call_model(&self, messages: &Vec<Message>, sys_prompt: &str, randomness: f64) 
     -> Result<MessagesResponse,Box<dyn std::error::Error>> {
 
+        let sp = if sys_prompt.is_empty() { 
+            serde_json::json!("") 
+        } else { 
+            build_ephemeral_sys_prompt(sys_prompt) 
+        };
+
         let request_json = serde_json::json!({
             "model": &self.model, 
             "max_tokens": self.max_tokens, 
             "temperature": randomness,
             "messages": &messages[..],
             "stream": false, 
-            "system": build_ephemeral_sys_prompt(sys_prompt),
+            "system": sp,
         });
 
         log::info!("Input tokens (approx): {}", 
@@ -112,13 +118,19 @@ impl AnthropicClient {
     pub async fn call_model_with_tools(&self, messages: &Vec<Message>, sys_prompt: &str, tools: &Vec<ToolDefinition>, randomness: f64) 
     -> Result<MessagesResponse,Box<dyn std::error::Error>> {
 
+        let sp = if sys_prompt.is_empty() { 
+            serde_json::json!("") 
+        } else { 
+            build_ephemeral_sys_prompt(sys_prompt) 
+        };
+
         let request_json = serde_json::json!({
             "model": &self.model, 
             "max_tokens": self.max_tokens, 
             "temperature": randomness,
             "messages": &messages[..],
             "stream": false, 
-            "system": build_ephemeral_sys_prompt(sys_prompt),
+            "system": sp,
             "tools": build_ephemeral_tools(&tools[..])
         });
 
