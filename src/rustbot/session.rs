@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::{ffi::OsStr, fs, path::PathBuf};
 
 use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
@@ -37,18 +37,22 @@ impl SessionManager {
     }
 
     /// Save conversation and topic string to a file
-    pub fn save_session(&mut self, bot: &RustBot, filename_arg: Option<String>) -> Result<(),Box<dyn std::error::Error>> {
-        let path = match filename_arg {
-            Some(filename) => self.save_dir.join(filename),
-            None => {
-                if !self.current.as_os_str().is_empty() {
-                    self.current.clone()
-                } else {
-                    let topic = self.generate_topic(bot).unwrap_or(format!("unnamed.json"));
-                    let filename = self.get_filename_from_topic(topic);
-                    self.save_dir.join(filename)
-                }
+    pub fn save_session(&mut self, bot: &mut RustBot, filename_arg: Option<String>) -> Result<(),Box<dyn std::error::Error>> {
+        let path = if let Some(filename) = filename_arg {
+            let path = PathBuf::from(filename.clone());
+            let stem = path.file_stem()
+                .unwrap_or(OsStr::new(&filename));
+            if let Some(topic) = stem.to_str() {
+                bot.set_topic(topic.replace("_"," "));
             }
+            self.save_dir.join(filename)
+        } else if !self.current.as_os_str().is_empty() {
+            self.current.clone()
+        } else {
+            let topic = self.generate_topic(bot)?;
+            bot.set_topic(&topic);
+            let filename = self.get_filename_from_topic(topic);
+            self.save_dir.join(filename)
         };
         self.save_session_as_json(path.clone(), bot)
     }
@@ -83,13 +87,15 @@ impl SessionManager {
         let topic_prompt = Message {
             role: Role::User,
             content: vec![ContentBlock::Text { 
-                text: crate::common::config
-                    ::get_config("prompts.json","generate_topic")?
+                text: r#"What is the topic of this conversation? This should be extremely short; try to keep
+                the character count less than 10. If that is too short, the hard maximum is 30 characters."#.into()
             }]
         };
         convo_copy.push(topic_prompt);
         
-        let topic_response = bot.query_llm(&convo_copy, "", 0.0)?;
+        let sys_prompt: String = crate::common::config
+            ::get_config("bot_config.json","base_sys_prompt")?;
+        let topic_response = bot.query_llm(&convo_copy, &sys_prompt, 0.0)?;
 
         match topic_response.content.first() {
             Some(ContentBlock::Text { text }) => Ok(text.chars().filter(|c| c.is_alphanumeric() || c.is_whitespace()).collect()),
