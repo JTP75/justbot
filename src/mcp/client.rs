@@ -43,6 +43,10 @@ impl McpClient {
         Ok(client)
     }
 
+    pub fn kill(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(self.process.kill()?)
+    }
+
     pub fn call_tool(&mut self, name: &str, args: &Value)
     -> Result<McpToolResult, Box<dyn std::error::Error>> {
         let request = serde_json::json!({

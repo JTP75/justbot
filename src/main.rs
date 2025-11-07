@@ -1,6 +1,6 @@
 //! Main entry point for rustbot application
 //! 
-//! - Handles startup/shutdown routines and the main CLI loop
+//! - Handles the main CLI loop
 //! - Delegates command handling to RustBot and SessionManager
 //! - Uses rustyline for CLI input with history support
 
@@ -11,103 +11,34 @@ mod connection;
 mod mcp;
 mod tools;
 
-use std::{process::Command, sync::{Arc, atomic::{AtomicBool, Ordering}}, thread};
+use std::{sync::{Arc, atomic::{AtomicBool, Ordering}}, thread};
 
-use directories::ProjectDirs;
+use figlet_rs::FIGfont;
 use rustyline::{self,error::ReadlineError};
 
-use crate::{common::config::{APPLICATION, ORGANIZATION, QUALIFIER}, rustbot::{bot::RustBot, session::SessionManager}};
-
-/// callback for handling bot commands
-fn handle_bot_command(sm: &mut SessionManager, bot: &mut RustBot, input: &str) -> Option<String> {
-    match bot.handle_command(sm, input) {
-        Ok(Some(response)) => Some(format!("\x1b[1;32m>>\x1b[0m {}", response)),
-        Ok(None) => None,
-        Err(e) => Some(format!("\x1b[1;31m>>\x1b[0m {}", e))
-    }
-}
-
-/// Program startup routine
-/// 
-/// - start Qdrant Vector DB using docker-compose script
-/// - start mcp server
-fn startup() -> Result<(),Box<dyn std::error::Error>> {
-    log::info!("Entering startup...");
-
-    let p_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
-    let compose_file = p_dirs.config_dir().join("docker-compose.yml");
-
-    let output = Command::new("docker-compose")
-        .arg("-f")
-        .arg(&compose_file)
-        .arg("up")
-        .arg("-d")
-        .output()?;
-    if !output.status.success() {
-        return Err(format!(
-            "docker-compose up service(s) failed: {}",
-            String::from_utf8_lossy(&output.stderr)
-        ).into());
-    }
-
-    log::info!("Startup complete!");
-    Ok(())
-}
-
-/// Program shutdown routine
-/// 
-/// - stop Qdrant Vector DB using docker-compose script
-fn shutdown() -> Result<(),Box<dyn std::error::Error>> {
-    log::info!("Entering shutdown...");
-
-    let p_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
-    let compose_file = p_dirs.config_dir().join("docker-compose.yml");
-    let output = Command::new("docker-compose")
-        .arg("-f")
-        .arg(&compose_file)
-        .arg("down")
-        .output()?;
-    if !output.status.success() {
-        return Err(format!(
-            "docker-compose down service(s) failed: {}",
-            String::from_utf8_lossy(&output.stderr)
-        ).into());
-    }
-
-    log::info!("Shutdown complete!");
-    Ok(())
-}
-
-pub fn spinner_thread(message: &str, stop_flag: Arc<AtomicBool>) {
-    let spinner = vec!["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-    let mut i = 0;
-    while !stop_flag.load(Ordering::Relaxed) {
-        print!("\r{} {}", spinner[i%spinner.len()], message);
-        std::io::Write::flush(&mut std::io::stdout()).unwrap();
-        std::thread::sleep(std::time::Duration::from_millis(80));
-        i += 1;
-    }
-    print!("\r");
-    std::io::Write::flush(&mut std::io::stdout()).unwrap();
-}
+use crate::{rustbot::{bot::RustBot, session::SessionManager}};
 
 fn main() {
 
     // setup env logger
     let _ = env_logger::builder().try_init();
 
-    // call startup checks
     println!("\x1b[1;34m>>\x1b[0m Starting up...");
-    if let Err(e) = startup() {
-        log::error!("Startup failed: {e}");
-        return;
-    }
 
     // init bot and session mgr
+    println!("\x1b[1;34m>>\x1b[0m Initializing bot and session... ");
     let mut bot = RustBot::new(crate::common::config
         ::get_config::<String>("bot_config.rs", "default_name")
         .unwrap_or("rustbot".into()));
     let mut sm = SessionManager::new();
+    if let Err(e) = bot.startup() {
+        log::error!("Startup failed: {e}");
+        return;
+    }
+    println!("\x1b[1;34m>>\x1b[0m Bot and session initialized!");
+
+    print_big_banner_puetce();
+    print_big_banner();
     
     // print initital message, todays date, and motd
     println!("\x1b[1;32m>>\x1b[0m Hi, I'm \x1b[0;33mrustbot\x1b[0m! Type 'help' to see what I can do.");
@@ -175,9 +106,6 @@ fn main() {
         }
     }
 
-    // drop bot
-    drop(bot);
-
     // save rustyline history
     let result = rl.save_history(&sm.data_dir.join("rustyline_history.txt"));
     if let Err(e) = result {
@@ -185,8 +113,58 @@ fn main() {
     }
 
     // call shutdown checks
-    if let Err(e) = shutdown() {
-        println!("\x1b[1;31mShutdown failed.\x1b[0m {e}");
-        return;
+    if let Err(e) = bot.shutdown() {
+        eprintln!("\x1b[1;31mShutdown failed.\x1b[0m {e}");
     }
+
+    // drop bot
+    drop(bot);
+
+    return;
+}
+
+/// callback for handling bot commands
+fn handle_bot_command(sm: &mut SessionManager, bot: &mut RustBot, input: &str) -> Option<String> {
+    match bot.handle_command(sm, input) {
+        Ok(Some(response)) => Some(format!("\x1b[1;32m>>\x1b[0m {}", response)),
+        Ok(None) => None,
+        Err(e) => Some(format!("\x1b[1;31m>>\x1b[0m {}", e))
+    }
+}
+
+pub fn spinner_thread(message: &str, stop_flag: Arc<AtomicBool>) {
+    let spinner = vec!["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+    let mut i = 0;
+    while !stop_flag.load(Ordering::Relaxed) {
+        print!("\r{} {}", spinner[i%spinner.len()], message);
+        std::io::Write::flush(&mut std::io::stdout()).unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(80));
+        i += 1;
+    }
+    print!("\r");
+    std::io::Write::flush(&mut std::io::stdout()).unwrap();
+}
+
+fn print_big_banner() -> () {
+    let font = FIGfont::standard().unwrap();
+    let figure = font.convert("RUSTBOT");
+    match figure {
+        Some(fig) => print!("\x1b[1;33m{}\x1b[0m", fig),
+        None => println!("RUSTBOT"),
+    }
+}
+
+/// 
+/// 
+/// - it is pronounced PWAYCHAY
+fn print_big_banner_puetce() {
+    // developers note: this doesnt mean anything, github copilot just hallucinated it and i thought it looked cool
+    println!(r#"
+██████╗ ██╗   ██╗███████╗████████╗ ██████╗███████╗
+██╔══██╗██║   ██║██╔════╝╚══██╔══╝██╔════╝██╔════
+██████╔╝██║   ██║█████╗     ██║   ██║     █████╗
+██╔═══╝ ██║   ██║██╔══╝     ██║   ██║     ██╔══╝
+██║     ╚██████╔╝███████╗   ██║   ╚██████╗███████╗
+╚═╝      ╚═════╝ ╚══════╝   ╚═╝    ╚═════╝╚══════╝
+"#);
 }

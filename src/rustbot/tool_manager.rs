@@ -49,6 +49,15 @@ impl ToolManager {
         Ok(())
     }
 
+    pub fn kill_mcp_servers(&mut self) -> () {
+        for (name,client) in self.mcp_clients.iter_mut() {
+            if let Err(e) = client.kill() {
+                log::error!("Failed to kill process for '{}': {}", name, e);
+                eprintln!("Failed to kill process for '{}': {}", name, e);
+            }            
+        }
+    }
+
     pub fn get_mcp_tooldefs(&self) -> Vec<ToolDefinition> {
         self.mcp_tools.iter()
             .map(|t| t.clone().into())
