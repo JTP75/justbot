@@ -111,6 +111,7 @@ fn main() {
     if let Err(e) = result {
         log::warn!("Failed to save rustyline history: {e}");
     }
+    drop(rl);
 
     // call shutdown checks
     if let Err(e) = bot.shutdown() {
