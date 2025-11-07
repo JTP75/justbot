@@ -1,9 +1,8 @@
 // #![allow(unused)]
 
-use directories::ProjectDirs;
 use reqwest::{Client, ClientBuilder};
 
-use crate::common::config::{APPLICATION, ORGANIZATION, QUALIFIER};
+use crate::common::config;
 
 #[derive(Debug)]
 pub struct VoyageClient {
@@ -17,8 +16,7 @@ impl VoyageClient {
 
     /// Create a new instance of `VoyageClient`
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let project_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
-        let env_path = project_dirs.config_dir().join(".env");
+        let env_path = config::PROJECT_DIRS.config_dir().join(".env");
         dotenvy::from_path(env_path).ok();
 
         let api_key = std::env::var("VOYAGE_API_KEY")?;

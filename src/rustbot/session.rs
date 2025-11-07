@@ -1,9 +1,8 @@
 use std::{ffi::OsStr, fs, path::PathBuf};
 
-use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 
-use crate::{common::{config::{APPLICATION, ORGANIZATION, QUALIFIER}, types::{ContentBlock, Message, Role}}, rustbot::bot::RustBot};
+use crate::{common::{config, types::{ContentBlock, Message, Role}}, rustbot::bot::RustBot};
 
 /// Serializable struct that can be saved to a json file
 /// 
@@ -28,10 +27,9 @@ impl SessionManager {
     /// 
     /// - technically might panic, but almost certainly not
     pub fn new() -> Self {
-        let project_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
         SessionManager { 
-            data_dir: project_dirs.data_dir().join(""),
-            save_dir: project_dirs.data_dir().join("sessions/"),
+            data_dir: config::PROJECT_DIRS.data_dir().join(""),
+            save_dir: config::PROJECT_DIRS.data_dir().join("sessions/"),
             current: PathBuf::new()
         }
     }

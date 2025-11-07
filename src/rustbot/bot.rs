@@ -2,10 +2,9 @@ use std::{env, fs};
 use std::path::{Path, PathBuf};
 
 use chrono::{self, Local};
-use directories::ProjectDirs;
 
 use crate::commands::{self, Command};
-use crate::common::config::{APPLICATION, ORGANIZATION, QUALIFIER};
+use crate::common::config;
 use crate::common::types::{ContentBlock, Message, MessagesResponse, Role, ToolResultContentBlock};
 use crate::connection::anthropic_client::{AnthropicClient, ToolDefinition};
 use crate::connection::qdrant_client::QdrantClient;
@@ -90,12 +89,11 @@ impl RustBot {
     pub fn startup(&mut self) -> Result<(), Box<dyn std::error::Error>> {
 
         log::info!("Entering bot startup...");
-        let p_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
 
         // start docker container services
         print!("\x1b[1;34m>>\x1b[0m Starting docker-compose services... ");
         
-        let compose_file = p_dirs.config_dir().join("docker-compose.yml");
+        let compose_file = config::PROJECT_DIRS.config_dir().join("docker-compose.yml");
         let output = std::process::Command::new("docker-compose")
             .arg("-f")
             .arg(&compose_file)
@@ -114,7 +112,7 @@ impl RustBot {
         // start mcp servers
         println!("\x1b[1;34m>>\x1b[0m Registering and Starting MCP servers... ");
 
-        let server_file = p_dirs.config_dir().join("mcp_servers.json");
+        let server_file = config::PROJECT_DIRS.config_dir().join("mcp_servers.json");
         let json = fs::read_to_string(server_file).unwrap();
         let mcp_config: McpConfig = serde_json::from_str(&json).unwrap_or_default();
         for mcp_server in mcp_config.mcp_servers {
@@ -152,8 +150,7 @@ impl RustBot {
         // stop docker container services
         println!("\x1b[1;34m>>\x1b[0m Shutting down docker-compose services... ");
 
-        let p_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
-        let compose_file = p_dirs.config_dir().join("docker-compose.yml");
+        let compose_file = config::PROJECT_DIRS.config_dir().join("docker-compose.yml");
         let output = std::process::Command::new("docker-compose")
             .arg("-f")
             .arg(&compose_file)

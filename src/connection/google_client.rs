@@ -3,13 +3,12 @@
 use std::path::PathBuf;
 
 use chrono::DateTime;
-use directories::ProjectDirs;
 use reqwest::Client;
 use yup_oauth2::{AccessToken, InstalledFlowAuthenticator, InstalledFlowReturnMethod};
 use serde::{Deserialize, Serialize};
 use derive_builder::Builder;
 
-use crate::common::config::{APPLICATION, ORGANIZATION, QUALIFIER};
+use crate::common::config;
 
 // structs
 
@@ -75,14 +74,13 @@ impl EventDateTime {
 
 impl GoogleClient {
     pub fn new() -> Self {
-        let project_dirs = ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap();
         GoogleClient {
             client: Client::new(),
             url: "https://www.googleapis.com/calendar/v3/calendars".into(),
             token: None,
             scopes: vec!["https://www.googleapis.com/auth/calendar".into()],
-            credentials_path: project_dirs.config_dir().join("auth/gcp-oauth.keys.json"),
-            token_path: project_dirs.cache_dir().join("google_auth_token.json"),
+            credentials_path: config::PROJECT_DIRS.config_dir().join("auth/gcp-oauth.keys.json"),
+            token_path: config::PROJECT_DIRS.cache_dir().join("google_auth_token.json"),
         }
     }
 

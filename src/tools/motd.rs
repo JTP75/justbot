@@ -1,9 +1,8 @@
 use std::fs;
 
 use chrono::Local;
-use directories::ProjectDirs;
 
-use crate::{common::config::{APPLICATION, ORGANIZATION, QUALIFIER}, rustbot::bot::RustBot, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
+use crate::{common::config, rustbot::bot::RustBot, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
 
 use super::{Tool, REGISTRY};
 
@@ -50,8 +49,8 @@ impl Tool for SetMotdTool {
         let json = serde_json::to_string_pretty(&bot.get_motd())?;
         let filename: String = crate::common::config
             ::get_config("bot_config.json","motd_filename")?;
-        let pd=ProjectDirs::from(QUALIFIER,ORGANIZATION,APPLICATION).unwrap();let data_dir = pd.data_dir();
-        fs::write(data_dir.join(filename), json)?;
+
+        fs::write(config::PROJECT_DIRS.data_dir().join(filename), json)?;
 
         Ok(None)
     }
