@@ -20,6 +20,13 @@ impl Command for MessageCommand {
 
         let sys_prompt: String = crate::common::config
             ::get_config("bot_config.json", "base_sys_prompt")?;
+        let sys_prompt = format!(
+            "{}\n{{MESSAGE MODE}}\n{}",
+            sys_prompt,
+            r#"You are being called in message mode. You do not have any tools available. If 
+            the user's query is tool-related, you should state that you currently operating in
+            message mode, and suggested that they try again using the 'msgt' command."#
+        );
         let response = bot.query_llm(&bot.get_messages(), &sys_prompt, 0.75)?;
 
         let agent_message = Message {
