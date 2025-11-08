@@ -65,10 +65,13 @@ pub mod schedule;
 pub mod news;
 pub mod motd;
 pub mod store;
-pub mod whereami;
 pub mod get_collection;
 pub mod set_collection;
 pub mod get_tools;
+
+// navigation
+pub mod whereami;
+pub mod ls;
 
 // session
 pub mod new;
