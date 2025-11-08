@@ -114,7 +114,7 @@ impl RustBot {
 
         let server_file = config::PROJECT_DIRS.config_dir().join("mcp_servers.json");
         let json = fs::read_to_string(server_file).unwrap();
-        let mcp_config: McpConfig = serde_json::from_str(&json).unwrap_or_default();
+        let mcp_config: McpConfig = serde_json::from_str(&json)?;
         for mcp_server in mcp_config.mcp_servers {
             let args: Vec<&str> = mcp_server.args.iter().map(|s| s.as_str()).collect();
             if let Err(e) = self.tool_mgr.register_mcp_server(
