@@ -487,6 +487,9 @@ impl RustBot {
     /// - expects a NaiveData and Option<String> tuple
     pub fn set_motd(&mut self, motd: (chrono::NaiveDate, Option<String>)) -> () { self.motd = motd }
 
+    /// Set the cwd
+    pub fn set_cwd(&mut self, new_cwd: impl Into<PathBuf>) -> () { self.cwd = new_cwd.into() }
+
     /// Set the currently selected VectorDB collection
     pub fn set_current_collection(&mut self, collection: Option<String>) -> () { self.collection = collection }
 

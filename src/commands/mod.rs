@@ -72,6 +72,7 @@ pub mod get_tools;
 // navigation
 pub mod whereami;
 pub mod ls;
+pub mod cd;
 
 // session
 pub mod new;
