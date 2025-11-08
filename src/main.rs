@@ -97,11 +97,18 @@ fn main() {
                     },
                 }
             }
-            Err(ReadlineError::Interrupted) => break,
-            Err(ReadlineError::Eof) => break,
+            Err(ReadlineError::Interrupted) => {
+                log::info!("Received SIGINT");
+                let response = handle_bot_command(&mut sm, &mut bot, "exit");
+                if let Some(r) = response { println!("{}", r); }
+                break
+            },
+            Err(ReadlineError::Eof) => {
+                break
+            },
             Err(err) => {
-                eprintln!("Readline failed: {:?}", err);
-                break;
+                log::error!("Readline failed: {:?}", err);
+                break
             }
         }
     }
@@ -115,7 +122,7 @@ fn main() {
 
     // call shutdown checks
     if let Err(e) = bot.shutdown() {
-        eprintln!("\x1b[1;31mShutdown failed.\x1b[0m {e}");
+        log::error!("\x1b[1;31mShutdown failed.\x1b[0m {e}");
     }
 
     // drop bot
