@@ -152,3 +152,16 @@ fn build_ephemeral_tools(tools: &[ToolDefinition]) -> serde_json::Value {
 
     serde_json::Value::Array(tool_defs)
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_sync() -> () {
+
+    }
+
+    #[tokio::test]
+    async fn test_async() -> () {
+
+    }
+}
