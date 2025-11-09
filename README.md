@@ -1,50 +1,38 @@
 # RustBot
 
-A modern, extensible CLI chatbot implemented in Rust with LLM integration and RAG (Retrieval-Augmented Generation) capabilities.
-
-## Overview
-
-RustBot is an interactive command-line chatbot powered by Anthropic's Claude API, featuring a modular command system, persistent conversation sessions, and semantic search through vector database integration. The bot combines natural language processing with a flexible architecture that allows easy extension and customization.
+A modern and extensible AI agent implemented in Rust with a command line interface, RAG (Retrieval-Augmented Generation) capabilities, MCP (Model Context Protocol) integration.
 
 ## Features
 
 - **🤖 LLM Integration** - Powered by Anthropic's Claude models for intelligent conversations
+- **🛜 Configurable MCP Servers** - Configurable MCP servers are registered and launched at runtime
 - **🔍 RAG Pipeline** - Semantic search using Qdrant vector database and Voyage AI embeddings
-- **💬 Session Management** - Persistent conversation history with save/load capabilities
-- **🛠️ Extensible Commands** - Modular command system with automatic registration
-- **🐳 Docker Integration** - Automatic Qdrant service management via docker-compose
+- **📅 MOTD Support** - Daily message of the day display for emotional support (and fun)
+- **📂 Session Management** - Persistent conversation history with save/load capabilities
+- **🗨️ Extensible Commands** - Modular command system with automatic registration
+- **🛠️ Extensible Custom Tools** - Modular custom tool system with automatic registration
 - **⚙️ Configurable** - JSON-based configuration for models, tokens, and behavior
-- **📅 MOTD Support** - Daily message of the day display for emotional support
 
-## Architecture
+## Modules
 
-RustBot is organized into four main modules:
+Project modules are documented in their respective README files
 
-### `src/rustbot/`
-Core bot implementation including:
-- **Bot Engine** - Main `RustBot` struct managing bot state and configuration
-- **Session Manager** - Conversation persistence and history management
-- **Message Processing** - Coordination between LLM, RAG pipeline, and user input
-
-### `src/commands/`
-Extensible command system with:
-- **Command Trait** - Interface for all bot commands
-- **Auto-registration** - Commands register themselves at startup
-- **Built-in Commands** - help, hello, whereami, list, motd, and more
-
-### `src/connection/`
-External service clients:
-- **AnthropicClient** - Claude API integration
-- **QdrantClient** - Vector database operations
-- **VoyageClient** - Text embedding generation
-
-### `src/common/`
-Shared utilities and configuration management
+| Module | Docs | Brief |
+|:---|:---|:---|
+| `common` | [src/common/README.md](src/common/README.md) | Common functionality for all modules
+| `commands` | [src/commands/README.md](src/commands/README.md) | Extensible command modules
+| `tools` | [src/tools/README.md](src/tools/README.md) | Extensible custom tool modules
+| `connection` | [src/connection/README.md](src/connection/README.md) | Clients for 3rd party services
+| `mcp` | [src/mcp/README.md](src/mcp/README.md) | MCP clients and server hosting
+| `rustbot` (Core) | [src/rustbot/README.md](src/rustbot/README.md) | Core functionality and integration
 
 ## Installation
 
+**(THIS IS NOT UP TO DATE)**
+
 ### Prerequisites
 
+#### Required
 - Current version is only tested on WSL2 Ubuntu
 - Rust 1.70+ (2024 edition)
 - Docker and docker-compose (for Qdrant vector database service)
@@ -52,6 +40,11 @@ Shared utilities and configuration management
 - API keys for:
   - [Anthropic Claude API Key](https://console.anthropic.com/)
   - [Voyage AI API Key](https://www.voyageai.com/)
+
+#### Optional
+- Node.js (for running MCP servers)
+  - [Node.js](https://nodejs.org)
+- `poppler-utils` (for embedding PDFs)
 
 ### Setup
 
@@ -95,8 +88,6 @@ Add your API keys:
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 VOYAGE_API_KEY=your_voyage_api_key_here
 ```
-
-**Important**: Do not commit the `.env` file to version control!
 
 ### 4. Configure Bot Settings (Optional)
 
@@ -211,10 +202,7 @@ Once the bot is running you can open the [Qdrant Dashboard](http://localhost:633
         message                 aliases=(msg)
         set-collection          aliases=(setc)
         save                    aliases=(w)
-        message-rag             aliases=(msg-rag | rag)
-        list                    aliases=()
-        motd                    aliases=()
-        help                    aliases=()
+        message-tools           aliases=(msgt)
         ...
 << help load
 >> load
@@ -226,7 +214,9 @@ HELP
 Usage: load <filename>
 Filename must be specified
 
-<< 
+<< whats on my agenda for today?
+>> 25 hours of coding
+<<
 ```
 
 ### Conversation Sessions
@@ -243,74 +233,38 @@ Command history is saved to:
 
 ## Development
 
-### Adding New Commands
-
-1. Create a new file in `src/commands/`
-2. Implement the `Command` trait
-3. Add auto-registration with `#[ctor::ctor]`
-4. Add new public module to `src/commands/mod.rs`
-
-
-Example: `mycommand.rs`
-```rust
-use crate::rustbot::{bot::RustBot, session::SessionManager};
-use super::{Command, REGISTRY};
-
-pub struct MyCommand;
-
-impl Command for MyCommand {
-    fn name(&self) -> &str { "mycommand" }
-    fn aliases(&self) -> Vec<&str> { vec![] }
-    fn desc(&self) -> &str { "My custom command" }
-    fn help(&self) -> &str { "Usage: mycommand" }
-    fn exec(&self, sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) 
-        -> Result<Option<String>, Box<dyn std::error::Error>> {
-        Ok(Some("Command executed!".to_string()))
-    }
-}
-
-#[ctor::ctor]
-fn register() {
-    REGISTRY.lock().unwrap().register(
-        "mycommand".into(), 
-        || Box::new(MyCommand),
-    );
-}
-```
-
-### Project Structure
-
-```
-rustbot/
-├── src/
-│   ├── main.rs           # Entry point and CLI loop
-│   ├── rustbot/          # Core bot implementation
-│   ├── commands/         # Command system
-│   ├── connection/       # API clients
-│   └── common/           # Shared utilities
-├── Cargo.toml
-└── README.md
-```
+The `commands` and `tools` modules were designed with extensibility in mind.
+- **Adding new commands**: See [Creating a New Command](src/commands/README.md#creating-a-new-command)
+- **Adding new tools**: See [Creating a New Tool](src/tools/README.md#creating-a-new-tool)
 
 ## Dependencies
 
-Key dependencies include:
-- `anthropic` - Claude API client
-- `qdrant-client` - Vector database operations
+- `tokio` - Asynchronous runtime with full feature set
+- `serde`/`serde_json` - Serialization and JSON support
 - `reqwest` - HTTP client for API calls
-- `tokio` - Async runtime
-- `rustyline` - Interactive CLI with history
-- `serde`/`serde_json` - Serialization
-- `chrono` - Date/time handling
-- `directories` - Platform-specific paths
+- `qdrant-client` - Vector database operations
+- `yup-oauth2` - OAuth2 authentication for Google APIs
+- `chrono` - Date and time handling
+- `directories` - Platform-specific configuration paths
+- `dotenvy` - Environment variable loading from `.env` files
+- `rustyline` - Interactive CLI with history and line editing
+- `log`/`env_logger` - Logging framework and implementation
+- `figlet-rs` - ASCII art text generation
+- `rand` - Random number generation
+- `once_cell` - Lazy static initialization
+- `derive_builder` - Builder pattern macros
+- `ctor` - Constructor functions
 
-## Error Handling
+For versions and features, see [Cargo.toml](Cargo.toml)
+
+## Message Indicators
 
 RustBot uses `Result<T, Box<dyn std::error::Error>>` throughout for comprehensive error handling. Errors are displayed with color-coded output:
+- 🟡 Yellow - User prompts
+- 🔵 Blue - Startup/shutdown messages
 - 🟢 Green - Successful responses
 - 🔴 Red - Error messages
-- 🟡 Yellow - User prompts
 
 ## License
 
-[Specify your license here]
+[MIT License](LICENSE)

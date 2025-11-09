@@ -1,48 +1,45 @@
-# Commands Directory
+# Commands Module
 
 This directory contains the command system implementation for RustBot. Commands are modular, self-registering units that extend the bot's functionality.
 
-## Overview
-
 The command system uses a trait-based architecture with automatic registration via the `#[ctor::ctor]` attribute. Each command is a separate module that implements the `Command` trait and registers itself with the global `REGISTRY`.
 
-## Architecture
+This design makes it relatively easy for contributors to add new commands (see bottom).
 
-### Command Trait
+## Modules
 
-All commands must implement the `Command` trait with the following methods:
+There is a separate module for each implemented command. The currently supported commands are
+- hello
+- help
+- message
+- message_rag
+- message_tool
+- message_knowledge
+- schedule
+- news
+- motd
+- store
+- get_collection
+- set_collection
+- get_tools
+- whereami
+- ls
+- cd
+- new
+- save
+- load
+- list
+- exit
+- wexit
 
-- `name(&self) -> &str` - The primary command name
-- `aliases(&self) -> Vec<&str>` - Alternative names for the command
-- `desc(&self) -> &str` - Short description of what the command does
-- `help(&self) -> &str` - Detailed usage instructions
-- `exec(&self, sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>>` - Command execution logic
+## Configuration
 
-### Command Registry
+- **Prompts**: found in `prompts.json`
+- **System Prompts**: found in `bot_config.json`
 
-The global `REGISTRY` manages all available commands. Commands are automatically registered at program startup using constructor functions marked with `#[ctor::ctor]`.
+## Integration
 
-## Example Commands
-
-### `help`
-- **Description**: Get help on command usage
-- **Usage**: `help [<command>]`
-- **Details**: Shows help and description for a specified command. If no command is specified, lists all available commands with their aliases.
-
-### `hello`
-- **Description**: Print a friendly greeting
-- **Usage**: `hello`
-- **Details**: Takes no arguments. Returns a greeting with the bot's name.
-
-### `whereami`
-- **Description**: Prints the current working directory of rustbot
-- **Usage**: `whereami`
-- **Details**: Takes no arguments. Returns the absolute path of the bot's current working directory.
-
-### `list`
-- **Description**: List all saved session files
-- **Usage**: `list`
-- **Details**: Takes no arguments. Shows all saved session files in the rustbot data directory.
+The commands module integrates via the `REGISTRY` in src/commands/mod.rs. This registry is used directly by `RustBot`.
 
 ## Creating a New Command
 
@@ -52,10 +49,12 @@ To create a new command:
 2. Define a struct for your command
 3. Implement the `Command` trait
 4. Add a registration function with `#[ctor::ctor]`
+5. Add public module to `src/commands/mod.rs`
 
-### Example Template
+### Example Command Template
 
 ```rust
+// in src/commands/mycommand.rs
 use crate::rustbot::{bot::RustBot, session::SessionManager};
 use super::{Command, REGISTRY};
 
@@ -66,9 +65,9 @@ impl Command for MyCommand {
     fn aliases(&self) -> Vec<&str> { vec!["mc", "mycmd"] }
     fn desc(&self) -> &str { "Brief description" }
     fn help(&self) -> &str { "Usage: mycommand [args]\nDetailed help text" }
-    fn exec(&self, sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) 
+    fn exec(&self, _sm: &mut SessionManager, _bot: &mut RustBot, args: &Vec<String>) 
         -> Result<Option<String>, Box<dyn std::error::Error>> {
-        // Implementation
+        // implementation
         Ok(Some("Command output".to_string()))
     }
 }
@@ -82,7 +81,14 @@ fn register() {
 }
 ```
 
-## Notes
+```rust
+// in src/commands/mod.rs
+
+// add this line:
+pub mod mycommand;
+```
+
+### Notes
 
 - Commands return `Result<Option<String>, Box<dyn std::error::Error>>`
 - Return `Ok(Some(String))` for output to display
