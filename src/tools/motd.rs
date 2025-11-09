@@ -38,7 +38,7 @@ impl Tool for SetMotdTool {
         ToolInputSchemaBuilder::default()
             .property("new_motd", "string", "The new message of the day to be stored. This should always be one sentence. It should be creative, funny, interesting, or some combination of those things.")
             .build()
-            .unwrap()
+            .expect("Tool schema builder failed")
     }
     fn exec(&self, bot: &mut RustBot, args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let new_motd = args.get("new_motd").ok_or("Arguments are missing a paramater 'new_motd'")?

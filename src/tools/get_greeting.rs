@@ -11,7 +11,7 @@ impl Tool for GetGreetingTool {
         ToolInputSchemaBuilder::default()
             .optional_property("name", "string", "Your name, if you have one")
             .build()
-            .unwrap()
+            .expect("Tool schema builder failed")
     }
     fn exec(&self, _bot: &mut RustBot, args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>> {
         if let Some(name) = args.as_object().unwrap_or(&serde_json::Map::new()).get("name") {

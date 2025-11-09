@@ -16,7 +16,7 @@ use super::{Tool, REGISTRY};
 //         ToolInputSchemaBuilder::default()
 //             .property("ndays", "number", "The number of days from now to retrieve events for. This is a positive integer greater than zero.")
 //             .build()
-//             .unwrap()
+//             .expect("Tool schema builder failed")
 //     }
 //     fn exec(&self, bot: &mut RustBot, args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>> {
 //         let count = args.get("ndays").ok_or("Arguments are missing a paramater 'ndays'")?

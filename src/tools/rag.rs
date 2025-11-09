@@ -12,7 +12,7 @@ impl Tool for RagTool {
             .property("query", "string", "The query for searching the vector database")
             .property("number_of_documents", "number", "This is the positive integer max number of documents to retrieve. The value should be at least 1 and at most 10.")
             .build()
-            .unwrap()
+            .expect("Tool schema builder failed")
     }
     fn exec(&self, bot: &mut RustBot, args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let query = args.get("query").ok_or("Arguments are missing a paramater 'query'")?
