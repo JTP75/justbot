@@ -53,18 +53,44 @@ impl QdrantClient {
             }),
             ..Default::default()
         };
-        self.client.create_collection(req).await?;
-        Ok(())
+
+        // 5 retries
+        for attempt in 1..6 {
+            let response = self.client.create_collection(req.clone()).await;
+            if let Ok(_response) = response {
+                return Ok(());
+            } else {
+                log::warn!(
+                    "Qdrant request failed (attempt {}/5): {}", 
+                    attempt, 
+                    response.unwrap_err()
+                );
+            }
+        }
+        Err("All create collection attempts failed.".into())
     }
 
     /// List all available collections in the Vector DB
     pub async fn list_collections(&self)
     -> Result<Vec<String>, Box<dyn std::error::Error>> {
-        let collections = self.client.list_collections().await?;
-        let list = collections.collections.iter()
-            .map(|c| c.name.clone())
-            .collect::<Vec<_>>();
-        Ok(list)
+        
+        // 5 retries
+        for attempt in 1..6 {
+            let response = self.client.list_collections().await;
+            if let Ok(response) = response {
+                let list = response.collections.iter()
+                    .map(|c| c.name.clone())
+                    .collect::<Vec<_>>();
+                return Ok(list);
+            } else {
+                log::warn!(
+                    "Qdrant request failed (attempt {}/5): {}", 
+                    attempt, 
+                    response.unwrap_err()
+                );
+            }
+        }
+        Err("All list collections attempts failed.".into())
     }
 
     /// Insert one vector to a collection in the Vector DB

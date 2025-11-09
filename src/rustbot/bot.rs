@@ -688,6 +688,10 @@ impl ClientManager {
         let embedding = self.embedding_client.get_embedding(&text_data, "document").await?;
 
         // store content to vdb
+        // (make a new collection if it doesnt exist)
+        if !self.vdb_client.list_collections().await?.contains(&collection_name.to_string()) {
+            self.vdb_client.add_collection(collection_name).await?;
+        }
         self.vdb_client.insert_to_collection(collection_name, embedding, path_str, &content).await?;
 
         Ok(())
@@ -728,6 +732,10 @@ impl ClientManager {
 
         let embeddings = self.embedding_client.get_embeddings(texts, "document").await?;
 
+        // (make a new collection if it doesnt exist)
+        if !self.vdb_client.list_collections().await?.contains(&collection_name.to_string()) {
+            self.vdb_client.add_collection(collection_name).await?;
+        }
         self.vdb_client.insert_multiple_to_collection(
             collection_name, 
             embeddings, 
