@@ -127,9 +127,9 @@ impl McpClient {
 
     fn read_response(&mut self) -> Result<Value, Box<dyn std::error::Error>> {
         
-        let rt = tokio::runtime::Runtime::new()?;
         let mut line = String::new();
 
+        let rt = tokio::runtime::Runtime::new()?;
         rt.block_on(async {
             let timeout_duration = Duration::from_secs(10);
             
@@ -141,6 +141,8 @@ impl McpClient {
                 Err(_) => Err("Read timeout after 10 seconds".into()),
             }
         })?; // this should make the stdin reader time out, but it hangs...
+
+        // self.reader.read_line(&mut line)?;
 
         match serde_json::from_str(&line) {
             Ok(response) => Ok(response),
@@ -160,6 +162,8 @@ impl McpClient {
 #[cfg(test)]
 mod tests {
     use std::{fs, path::PathBuf, sync::Mutex};
+    use crate::mcp::McpContent;
+
     use super::*;
 
     const TEST_OUTPUT_DIR: &str = "/home/pacel/misc/rust/rustbot/.ignore/output/";
@@ -195,9 +199,45 @@ mod tests {
 
     #[test]
     fn test_get_tools() -> () {
-        let mut client = TEST_CLIENT.lock().unwrap().take().unwrap();
+        let mut mutex = TEST_CLIENT.lock().unwrap();
+        let mut client = mutex.take().unwrap();
 
-        let tools = client.list_tools().unwrap();
-        println!("{}", tools.iter().map(|t| t.name.as_str()).collect::<Vec<_>>().join("\n"));
+        let tools = client.list_tools();
+
+        mutex.replace(client);
+        drop(mutex);
+
+        assert!(tools.is_ok(), "{}", tools.err().unwrap());
+        let tools = tools.unwrap();
+
+        log::info!("{}", tools.iter().map(|t| t.name.as_str()).collect::<Vec<_>>().join("\n"));
+    }
+
+    #[test]
+    fn test_call_tool() -> () {
+        let path_str = format!("{}/{}", TEST_OUTPUT_DIR, "test.txt");
+        let content = "Hello, World!";
+        fs::write(&path_str, content).unwrap();
+
+        let mut mutex = TEST_CLIENT.lock().unwrap();
+        let mut client = mutex.take().unwrap();
+
+        let rslt = client.call_tool("read_text_file", &serde_json::json!({ "path": path_str }));
+
+        mutex.replace(client);
+        drop(mutex);
+
+        assert!(rslt.is_ok());
+        let rslt = rslt.unwrap();
+        assert!(rslt.is_error.is_none() || !rslt.is_error.unwrap());
+
+        log::info!("{:?}", rslt);
+
+        let read_content = match &rslt.content[0] {
+            McpContent::Text { text } => text,
+        };
+        assert_eq!(content,read_content);
+
+        fs::remove_file(&path_str).unwrap();
     }
 }
