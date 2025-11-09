@@ -169,7 +169,7 @@ fn print_big_banner_puetce() {
     // developers note: this doesnt mean anything, github copilot just hallucinated it and i thought it looked cool
     println!(r#"
 ██████╗ ██╗   ██╗███████╗████████╗ ██████╗███████╗
-██╔══██╗██║   ██║██╔════╝╚══██╔══╝██╔════╝██╔════
+██╔══██╗██║   ██║██╔════╝╚══██╔══╝██╔════╝██╔════╝
 ██████╔╝██║   ██║█████╗     ██║   ██║     █████╗
 ██╔═══╝ ██║   ██║██╔══╝     ██║   ██║     ██╔══╝
 ██║     ╚██████╔╝███████╗   ██║   ╚██████╗███████╗
