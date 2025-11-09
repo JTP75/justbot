@@ -140,6 +140,7 @@ fn handle_bot_command(sm: &mut SessionManager, bot: &mut RustBot, input: &str) -
     }
 }
 
+/// Thread routine for the spinner
 pub fn spinner_thread(message: &str, stop_flag: Arc<AtomicBool>) {
     let spinner = vec!["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
     let mut i = 0;
@@ -153,6 +154,7 @@ pub fn spinner_thread(message: &str, stop_flag: Arc<AtomicBool>) {
     std::io::Write::flush(&mut std::io::stdout()).unwrap();
 }
 
+/// Prints the rustbot banner
 fn print_big_banner() -> () {
     let font = FIGfont::standard().unwrap();
     let figure = font.convert("RUSTBOT");
@@ -162,7 +164,7 @@ fn print_big_banner() -> () {
     }
 }
 
-/// 
+/// Prints the PUETCE banner
 /// 
 /// - it is pronounced PWAYCHAY
 fn print_big_banner_puetce() {
