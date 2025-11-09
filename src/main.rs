@@ -66,7 +66,8 @@ fn main() {
     }
 
     // cli loop
-    loop {
+    let mut running = true;
+    while running {
         match rl.readline("\x1b[1;33m<<\x1b[0m ") {
             Ok(line) => {
                 let ssf = Arc::new(AtomicBool::new(false));
@@ -84,7 +85,7 @@ fn main() {
                         let _ = spinner.join();
 
                         if let Some(r) = response { println!("{}", r); }
-                        break;
+                        running = false
                     },
                     _ => {
                         let _ = rl.add_history_entry(&line);
@@ -101,14 +102,14 @@ fn main() {
                 log::info!("Received SIGINT");
                 let response = handle_bot_command(&mut sm, &mut bot, "exit");
                 if let Some(r) = response { println!("{}", r); }
-                break
+                running = false
             },
             Err(ReadlineError::Eof) => {
-                break
+                running = false
             },
             Err(err) => {
                 log::error!("Readline failed: {:?}", err);
-                break
+                running = false
             }
         }
     }
