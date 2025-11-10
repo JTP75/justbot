@@ -37,3 +37,15 @@ pub fn get_config<T>(filename: &str, key: &str) -> Result<T,Box<dyn std::error::
         None => Err(format!("Could not find key '{}' in '{}'", key, filename).into())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_config() {
+        let use_anthropic: bool = get_config("bot_config.json", "enable_anthropic")
+            .expect("get config failed");
+        assert!(use_anthropic);
+    }
+}
