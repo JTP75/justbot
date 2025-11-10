@@ -4,7 +4,7 @@ use directories::ProjectDirs;
 use once_cell::sync::Lazy;
 
 pub const QUALIFIER: &str = "com";
-pub const ORGANIZATION: &str = "The justbot Company";
+pub const ORGANIZATION: &str = "puetceco";
 pub const APPLICATION: &str = "rustbot";
 pub static PROJECT_DIRS: Lazy<ProjectDirs> = 
     Lazy::new(|| ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap());

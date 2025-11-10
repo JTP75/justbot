@@ -66,10 +66,10 @@ cargo run --bin setup
 This setup script will:
 - Create configuration directory at:
   - **Linux/macOS**: `~/.config/rustbot/`
-  - **Windows**: `%APPDATA%\The justbot Company\rustbot\config\`
+  - **Windows**: `%APPDATA%\puetceco\rustbot\config\`
 - Create data directory at:
   - **Linux/macOS**: `~/.local/share/rustbot/`
-  - **Windows**: `%APPDATA%\The justbot Company\rustbot\data\`
+  - **Windows**: `%APPDATA%\puetceco\rustbot\data\`
 - Create sessions subdirectory for conversation persistence
 - Copy default configuration files:
   - `bot_config.json`
@@ -174,9 +174,10 @@ puetce
 
 When launched, Puetce will:
 1. Start the Qdrant vector database service via docker-compose
-2. Initialize the bot and session manager
-3. Display the message of the day
-4. Begin the CLI
+2. Start each configured MCP server
+3. Initialize the bot and session manager
+4. Display the message of the day
+5. Begin the CLI
 
 ### Accessing the Qdrant VectorDB
 
