@@ -1,4 +1,4 @@
-# RustBot
+# Puetce
 
 A modern and extensible AI agent implemented in Rust with a command line interface, RAG (Retrieval-Augmented Generation) capabilities, MCP (Model Context Protocol) integration.
 
@@ -24,11 +24,11 @@ Project modules are documented in their respective README files
 | `tools` | [src/tools/README.md](src/tools/README.md) | Extensible custom tool modules
 | `connection` | [src/connection/README.md](src/connection/README.md) | Clients for 3rd party services
 | `mcp` | [src/mcp/README.md](src/mcp/README.md) | MCP clients and server hosting
-| `rustbot` (Core) | [src/rustbot/README.md](src/rustbot/README.md) | Core functionality and integration
+| `app` (Core) | [src/app/README.md](src/app/README.md) | Core functionality and integration
 
 ## Installation
 
-**(THIS IS NOT UP TO DATE)**
+**(EVERYTHING IN THIS SECTION IS NOT UP TO DATE)**
 
 ### Prerequisites
 
@@ -51,13 +51,13 @@ Project modules are documented in their respective README files
 ### 1. Clone the Repository
 
 ```
-git clone https://github.com/JTP75/justbot.git
-cd rustbot
+git clone https://github.com/JTP75/puetce.git
+cd puetce
 ```
 
 ### 2. Run Setup Script
 
-RustBot includes an automated setup script that creates necessary directories and configuration files:
+Puetce includes an automated setup script that creates necessary directories and configuration files:
 
 ```bash
 cargo run --bin setup
@@ -155,7 +155,7 @@ cargo install --path .
 
 ## Usage
 
-### Starting RustBot
+### Starting Puetce
 
 From installation dir:
 ```bash
@@ -164,15 +164,15 @@ cargo run --release
 
 Or use the compiled binary:
 ```bash
-./target/release/rustbot
+./target/release/puetce
 ```
 
 If installed by cargo, run anywhere:
 ```bash
-rustbot
+puetce
 ```
 
-When launched, RustBot will:
+When launched, Puetce will:
 1. Start the Qdrant vector database service via docker-compose
 2. Initialize the bot and session manager
 3. Display the message of the day
@@ -185,11 +185,11 @@ Once the bot is running you can open the [Qdrant Dashboard](http://localhost:633
 ### Basic Interaction
 
 ```
->> Hi, I'm rustbot! Type 'help' to see what I can do.
+>> Hi, I'm puetce! Type 'help' to see what I can do.
 >> Today is Monday, January 1, 2024.
->> Welcome to RustBot!
+>> Welcome to Puetce!
 << hello
->> Hello there! My name is rustbot.
+>> Hello there! My name is puetce.
 << help
 >> Available commands are:
         load                    aliases=()
@@ -259,7 +259,7 @@ For versions and features, see [Cargo.toml](Cargo.toml)
 
 ## Message Indicators
 
-RustBot uses `Result<T, Box<dyn std::error::Error>>` throughout for comprehensive error handling. Errors are displayed with color-coded output:
+Puetce uses `Result<T, Box<dyn std::error::Error>>` throughout for comprehensive error handling. Errors are displayed with color-coded output:
 - 🟡 Yellow - User prompts
 - 🔵 Blue - Startup/shutdown messages
 - 🟢 Green - Successful responses

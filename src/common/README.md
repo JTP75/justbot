@@ -1,6 +1,6 @@
 # Common Module
 
-The common module provides shared utilities and configurations used throughout RustBot.
+The common module provides shared utilities and configurations used throughout Puetce.
 
 ## Modules
 
@@ -23,7 +23,7 @@ Configuration files are typically located in:
 
 ## Integration
 
-The common module is integrated throughout RustBot. Used in almost every module
+The common module is integrated throughout Puetce. Used in almost every module
 
 ## Note
 

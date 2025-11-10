@@ -39,7 +39,7 @@ fn main() {
     print_big_banner_puetce();
     
     // print initital message, todays date, and motd
-    println!("\x1b[1;32m>>\x1b[0m Hi, I'm \x1b[0;33mrustbot\x1b[0m! Type 'help' to see what I can do.");
+    println!("\x1b[1;32m>>\x1b[0m Hi, I'm \x1b[0;33mPuetce\x1b[0m! Type 'help' to see what I can do.");
     match sm.load_motd(&mut bot) {
         Ok(_) => {
             handle_bot_command(&mut sm, &mut bot, "motd");

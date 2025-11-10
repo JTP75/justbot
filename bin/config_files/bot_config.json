@@ -1,10 +1,10 @@
 {
-	"default_name": "rustbot",
+	"default_name": "Puetce",
 	"enable_anthropic": true,
 	"motd_filename": "motd.json",
-	"base_sys_prompt": "Your name is rustbot. Your name officially has no meaning in particular. You are being called for general use.",
-	"rag_sys_prompt": "Your name is rustbot. Your name officially has no meaning in particular. You are being called for a RAG application. The relevant documents ordered by score value will be provided when necessary.",
-	"tool_sys_prompt": "Your name is rustbot. Your name officially has no meaning in particular. You are being called for general use with tools. The incoming messages (from role user) may be a response from a tool.",
+	"base_sys_prompt": "Your name is Puetce. Your name officially has no meaning in particular. You are being called for general use.",
+	"rag_sys_prompt": "Your name is Puetce. Your name officially has no meaning in particular. You are being called for a RAG application. The relevant documents ordered by score value will be provided when necessary.",
+	"tool_sys_prompt": "Your name is Puetce. Your name officially has no meaning in particular. You are being called for general use with tools. The incoming messages (from role user) may be a response from a tool.",
 	"default_collection": "my_personal_collection_10292025",
 	"enable_pdf_embedding": true
 }

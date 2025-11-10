@@ -1,6 +1,6 @@
 # Tools Module
 
-The `tools` module provides a framework for integrating custom tools into rustbot. These tools allow the AI agent to perform tasks according to the tool specifications. This directory contains tool definitions, implementations, and management utilities.
+The `tools` module provides a framework for integrating custom tools into Puetce. These tools allow the AI agent to perform tasks according to the tool specifications. This directory contains tool definitions, implementations, and management utilities.
 
 ## Modules
 
@@ -16,7 +16,7 @@ There is a separate module for each implemented command. The currently supported
 
 ## Integration
 
-The tools module integrates via the `REGISTRY` in src/tools/mod.rs. This registry is used directly by `RustBot`.
+The tools module integrates via the `REGISTRY` in src/tools/mod.rs. This registry is used directly by `PuetceApp`.
 
 ## Creating a New Tool
 
@@ -31,7 +31,7 @@ pub trait Tool {
     fn name(&self) -> &str;                    // Tool identifier
     fn description(&self) -> &str;             // AI-readable description
     fn input_schema(&self) -> ToolInputSchema; // Input parameter schema
-    fn exec(&self, bot: &mut RustBot, args: &serde_json::Value)
+    fn exec(&self, bot: &mut PuetceApp, args: &serde_json::Value)
         -> Result<Option<String>, Box<dyn std::error::Error>>; // Execution logic
 }
 ```
@@ -76,7 +76,7 @@ To create a new tool:
 // in src/tools/my_tool.rs
 
 use crate::tools::{Tool, ToolInputSchema, ToolInputSchemaBuilder};
-use crate::rustbot::bot::RustBot;
+use crate::app::bot::PuetceApp;
 
 pub struct MyTool;
 
@@ -97,7 +97,7 @@ impl Tool for MyTool {
             .expect("Failed to build schema")
     }
 
-    fn exec(&self, bot: &mut RustBot, args: &serde_json::Value)
+    fn exec(&self, bot: &mut PuetceApp, args: &serde_json::Value)
         -> Result<Option<String>, Box<dyn std::error::Error>>
     {
         // Extract parameters from args
@@ -134,4 +134,4 @@ pub mod my_tool;
 - Return `Ok(Some(String))` for response to agent
 - Return `Ok(None)` for silent success
 - Return `Err(...)` for error conditions
-- Tools have mutable access to `RustBot` for bot functionality
+- Tools have mutable access to `PuetceApp` for bot functionality

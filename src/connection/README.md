@@ -1,6 +1,6 @@
 # Connection Module
 
-The connection module provides abstracted interfaces to external API services used by RustBot. These clients handle authentication, request/response processing, and communication with third-party services.
+The connection module provides abstracted interfaces to external API services used by Puetce. These clients handle authentication, request/response processing, and communication with third-party services.
 
 The key features are
 - **Async-first design** - All clients use Tokio for async operations
@@ -31,4 +31,4 @@ API keys and settings are managed via:
 ## Integration
 
 The Connection Module Integrates with
-- **RustBot** (via `ClientManager`): Sync callbacks and routines for RustBot to use each client
+- **PuetceApp** (via `ClientManager`): Sync callbacks and routines for PuetceApp to use each client

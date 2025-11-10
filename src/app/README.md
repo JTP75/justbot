@@ -1,6 +1,6 @@
 # App Module (Core)
 
-This directory contains the core implementation of RustBot, including the bot engine, session management, and conversation handling logic.
+This directory contains the core implementation of Puetce, including the bot engine, session management, and conversation handling logic.
 
 The `app` module provides the fundamental components that power the chatbot's functionality, including:
 - Bot configuration and state management
@@ -14,9 +14,9 @@ The `app` module provides the fundamental components that power the chatbot's fu
 
 ### `bot.rs`
 
-The main bot implementation containing the `RustBot` struct.
+The main bot implementation containing the `PuetceApp` struct.
 
-#### `RustBot` Responsibilities
+#### `PuetceApp` Responsibilities
 - Initialization and setup
 - Command routing
 - State management
@@ -53,9 +53,9 @@ Saved session files include:
 ## Integration
 
 ### With Commands
-Commands receive mutable references to both `SessionManager` and `RustBot`:
+Commands receive mutable references to both `SessionManager` and `PuetceApp`:
 ```rust
-fn exec(&self, sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) 
+fn exec(&self, sm: &mut SessionManager, bot: &mut PuetceApp, args: &Vec<String>) 
     -> Result<Option<String>, Box<dyn std::error::Error>>
 ```
 
@@ -64,7 +64,7 @@ This allows commands to:
 - Access bot configuration
 - Load/save sessions
 - Interact with conversation history
-- Any other task involving a mutable `RustBot` ref
+- Any other task involving a mutable `PuetceApp` ref
 
 ### With Connection Clients
 The bot coordinates with external services:
@@ -82,7 +82,7 @@ The bot integrates RAG functionality:
 
 ## Configuration
 
-The rustbot core uses configuration from:
+The Puetce core uses configuration from:
 - **Project Directories** - JSON config files in platform-specific config/data paths via `directories` crate
 - **Environment Variables** - API keys loaded via `dotenvy`
 
@@ -97,7 +97,7 @@ Example data flow for tool use call involving RAG:
     ↓
 2. Tool Use Pipeline (get list of available tools)
     ↓
-3. RustBot (coordinate first request)
+3. PuetceApp (coordinate first request)
     ↓
 4. AnthropicClient (send query + tools to anthropic)
     ├─→ Process query and tools
@@ -111,7 +111,7 @@ Example data flow for tool use call involving RAG:
     ├─→ QdrantClient (similarity search)
     └─→ Context Retrieval
     ↓
-7. RustBot (coordinate second request)
+7. PuetceApp (coordinate second request)
     ↓
 8. AnthropicClient (send query + tools to anthropic)
     ├─→ Process tool result

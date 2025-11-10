@@ -1,6 +1,6 @@
 # Commands Module
 
-This directory contains the command system implementation for RustBot. Commands are modular, self-registering units that extend the bot's functionality.
+This directory contains the command system implementation for Puetce. Commands are modular, self-registering units that extend the bot's functionality.
 
 The command system uses a trait-based architecture with automatic registration via the `#[ctor::ctor]` attribute. Each command is a separate module that implements the `Command` trait and registers itself with the global `REGISTRY`.
 
@@ -39,7 +39,7 @@ There is a separate module for each implemented command. The currently supported
 
 ## Integration
 
-The commands module integrates via the `REGISTRY` in src/commands/mod.rs. This registry is used directly by `RustBot`.
+The commands module integrates via the `REGISTRY` in src/commands/mod.rs. This registry is used directly by `PuetceApp`.
 
 ## Creating a New Command
 
@@ -55,7 +55,7 @@ To create a new command:
 
 ```rust
 // in src/commands/mycommand.rs
-use crate::rustbot::{bot::RustBot, session::SessionManager};
+use crate::app::{bot::PuetceApp, session::SessionManager};
 use super::{Command, REGISTRY};
 
 pub struct MyCommand;
@@ -65,7 +65,7 @@ impl Command for MyCommand {
     fn aliases(&self) -> Vec<&str> { vec!["mc", "mycmd"] }
     fn desc(&self) -> &str { "Brief description" }
     fn help(&self) -> &str { "Usage: mycommand [args]\nDetailed help text" }
-    fn exec(&self, _sm: &mut SessionManager, _bot: &mut RustBot, args: &Vec<String>) 
+    fn exec(&self, _sm: &mut SessionManager, _bot: &mut PuetceApp, args: &Vec<String>) 
         -> Result<Option<String>, Box<dyn std::error::Error>> {
         // implementation
         Ok(Some("Command output".to_string()))
@@ -94,4 +94,4 @@ pub mod mycommand;
 - Return `Ok(Some(String))` for output to display
 - Return `Ok(None)` for silent success
 - Return `Err(...)` for error conditions
-- Commands have access to `SessionManager` for session state and `RustBot` for bot configuration
+- Commands have access to `SessionManager` for session state and `PuetceApp` for bot configuration
