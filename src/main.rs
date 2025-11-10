@@ -13,7 +13,6 @@ mod tools;
 
 use std::{sync::{Arc, atomic::{AtomicBool, Ordering}}, thread};
 
-use figlet_rs::FIGfont;
 use rustyline::{self,error::ReadlineError};
 
 use crate::{app::{bot::PuetceApp, session::SessionManager}};
@@ -38,7 +37,6 @@ fn main() {
     println!("\x1b[1;34m>>\x1b[0m Bot and session initialized!");
 
     print_big_banner_puetce();
-    print_big_banner();
     
     // print initital message, todays date, and motd
     println!("\x1b[1;32m>>\x1b[0m Hi, I'm \x1b[0;33mrustbot\x1b[0m! Type 'help' to see what I can do.");
@@ -153,16 +151,6 @@ pub fn spinner_thread(message: &str, stop_flag: Arc<AtomicBool>) {
     }
     print!("\r");
     std::io::Write::flush(&mut std::io::stdout()).unwrap();
-}
-
-/// Prints the rustbot banner
-fn print_big_banner() -> () {
-    let font = FIGfont::standard().unwrap();
-    let figure = font.convert("RUSTBOT");
-    match figure {
-        Some(fig) => print!("\x1b[1;33m{}\x1b[0m", fig),
-        None => println!("RUSTBOT"),
-    }
 }
 
 /// Prints the PUETCE banner
