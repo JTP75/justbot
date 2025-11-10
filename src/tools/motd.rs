@@ -2,7 +2,7 @@ use std::fs;
 
 use chrono::Local;
 
-use crate::{common::config, rustbot::bot::RustBot, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
+use crate::{common::config, app::bot::RustBot, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
 
 use super::{Tool, REGISTRY};
 

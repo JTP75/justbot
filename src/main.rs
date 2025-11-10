@@ -6,7 +6,7 @@
 
 mod common;
 mod commands;
-mod rustbot;
+mod app;
 mod connection;
 mod mcp;
 mod tools;
@@ -16,7 +16,7 @@ use std::{sync::{Arc, atomic::{AtomicBool, Ordering}}, thread};
 use figlet_rs::FIGfont;
 use rustyline::{self,error::ReadlineError};
 
-use crate::{rustbot::{bot::RustBot, session::SessionManager}};
+use crate::{app::{bot::RustBot, session::SessionManager}};
 
 fn main() {
 

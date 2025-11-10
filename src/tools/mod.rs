@@ -5,7 +5,7 @@ use derive_builder::Builder;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-use crate::{connection::anthropic_client::AnthropicToolDefinition, rustbot::bot::RustBot};
+use crate::{connection::anthropic_client::AnthropicToolDefinition, app::bot::RustBot};
 
 pub trait Tool {
     // templates

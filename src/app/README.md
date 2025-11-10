@@ -1,8 +1,8 @@
-# RustBot Module (Core)
+# App Module (Core)
 
 This directory contains the core implementation of RustBot, including the bot engine, session management, and conversation handling logic.
 
-The `rustbot` module provides the fundamental components that power the chatbot's functionality, including:
+The `app` module provides the fundamental components that power the chatbot's functionality, including:
 - Bot configuration and state management
 - Conversation session handling
 - Message processing and LLM interaction

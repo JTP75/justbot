@@ -9,8 +9,8 @@ use crate::connection::anthropic_client::{AnthropicClient, AnthropicToolDefiniti
 use crate::connection::qdrant_client::QdrantClient;
 use crate::connection::voyage_client::VoyageClient;
 use crate::mcp::McpConfig;
-use crate::rustbot::tool_manager::ToolManager;
-use crate::rustbot::session::SessionManager;
+use crate::app::tool_manager::ToolManager;
+use crate::app::session::SessionManager;
 
 // structs
 

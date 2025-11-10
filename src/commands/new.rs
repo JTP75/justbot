@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::rustbot::{bot::RustBot, session::SessionManager};
+use crate::app::{bot::RustBot, session::SessionManager};
 
 use super::{Command, REGISTRY};
 

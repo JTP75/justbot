@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use crate::{connection::anthropic_client::AnthropicToolDefinition, mcp::{McpContent, McpTool, client::McpClient}, rustbot::bot::RustBot, tools::{self, Tool}};
+use crate::{connection::anthropic_client::AnthropicToolDefinition, mcp::{McpContent, McpTool, client::McpClient}, app::bot::RustBot, tools::{self, Tool}};
 
 pub struct ToolManager {
     mcp_clients: HashMap<String, McpClient>,
