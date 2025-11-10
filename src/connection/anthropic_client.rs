@@ -1,3 +1,5 @@
+use std::{collections::VecDeque, sync::{Arc, Mutex}, time::{Duration, Instant}};
+
 use dotenvy;
 
 use reqwest::{Client, ClientBuilder};
@@ -12,6 +14,104 @@ pub struct ToolDefinition {
     pub input_schema: serde_json::Value,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct CacheUsage {
+    ephemeral_1h_input_tokens: usize,
+    ephemeral_5m_input_tokens: usize
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct AnthropicUsage {
+    cache_creation: CacheUsage,
+    cache_creation_input_tokens: usize,
+    cache_read_input_tokens: usize,
+    input_tokens: usize,
+    output_tokens: usize,
+    service_tier: String
+}
+
+impl Into<Usage> for AnthropicUsage {
+    fn into(self) -> Usage {
+        Usage {
+            timestamp: Instant::now(),
+            input_tokens: self.input_tokens,
+            output_tokens: self.output_tokens
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Usage {
+    timestamp: Instant,
+    input_tokens: usize,
+    output_tokens: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct AnthropicUsageMonitor {
+    usage_history: Arc<Mutex<VecDeque<Usage>>>,
+    window_duration: Duration,
+    max_tpm: (usize,usize),
+}
+
+impl AnthropicUsageMonitor {
+    pub fn new() -> Self {
+        let max_tpm: (usize,usize) = (
+            crate::common::config
+                ::get_config("anthropic_config.json", "max_input_tpm")
+                .expect("failed get from config"),
+            crate::common::config
+                ::get_config("anthropic_config.json", "max_output_tpm")
+                .expect("failed get from config"),
+        );
+        Self {
+            usage_history: Arc::new(Mutex::new(VecDeque::new())),
+            window_duration: Duration::from_secs(60),
+            max_tpm,
+        }
+    }
+
+    pub fn record(&self, usage: Usage) -> () {
+        let mut history = self.usage_history.lock()
+            .expect("failed to acquire mutex");
+        history.push_back(usage);
+    }
+
+    pub fn max_tpm(&self) -> (usize,usize) { self.max_tpm.clone() }
+
+    pub fn tpm(&self) -> (usize,usize) {
+        let mut history = self.usage_history.lock()
+            .expect("failed to acquire mutex");
+        let now = Instant::now();
+        let cutoff = now - self.window_duration;
+
+        while let Some(usage) = history.front() {
+            if usage.timestamp < cutoff {
+                history.pop_front();
+            } else {
+                break;
+            }
+        }
+
+        let input_tokens = history.iter().map(|usage| usage.input_tokens).sum();
+        let output_tokens = history.iter().map(|usage| usage.output_tokens).sum();
+
+        (input_tokens, output_tokens)
+    }
+
+    pub fn tpm_str(&self) -> String {
+        let tpm = self.tpm();
+        let max_tpm = self.max_tpm();
+        let pct_in = 100.0 * tpm.0 as f64 / max_tpm.0 as f64;
+        let pct_out = 100.0 * tpm.1 as f64 / max_tpm.1 as f64;
+        format!(
+            "in: {:5} / {:5} ({:.1}%), out: {:5} / {:5} ({:.1}%)",
+            tpm.0, max_tpm.0, pct_in, 
+            tpm.1, max_tpm.1, pct_out,
+        )
+    }
+}
+
 #[derive(Debug)]
 pub struct AnthropicClient {
     client: Client,
@@ -20,6 +120,7 @@ pub struct AnthropicClient {
     api_version: String,
     model: String,
     max_tokens: usize,
+    pub usage_monitor: AnthropicUsageMonitor,
 }
 
 impl AnthropicClient {
@@ -43,6 +144,7 @@ impl AnthropicClient {
                 ::get_config("anthropic_config.json", "default_model")?,
             max_tokens: crate::common::config
                 ::get_config("anthropic_config.json", "max_tokens")?,
+            usage_monitor: AnthropicUsageMonitor::new()
         })
     }
 
@@ -60,8 +162,6 @@ impl AnthropicClient {
             ).sum()
     }
 
-    // todo we can probably collapse these two functions into one with an Option<Vec<ToolDefinition>>
-
     /// Sends a list of messages, system prompt, and randomness (temperature) to the LLM and returns the response
     pub async fn call_model(
         &self, 
@@ -72,38 +172,27 @@ impl AnthropicClient {
     ) 
     -> Result<MessagesResponse,Box<dyn std::error::Error>> {
 
-        let sp = if sys_prompt.is_empty() { 
-            serde_json::json!("") 
-        } else { 
+        let sp = if !sys_prompt.is_empty() { 
             build_ephemeral_sys_prompt(sys_prompt) 
+        } else { 
+            serde_json::json!("") 
         };
 
-        let mut token_estimate = self.estimate_token_count_text(messages)
-                + sys_prompt.len()/4;
-
-        let request_json = if let Some(t) = tools {
-            token_estimate += t.iter().map(|t| t.description.len()/4).sum::<usize>();
-            serde_json::json!({
-                "model": &self.model, 
-                "max_tokens": self.max_tokens, 
-                "temperature": randomness,
-                "messages": &messages[..],
-                "stream": false, 
-                "system": sp,
-                "tools": build_ephemeral_tools(t)
-            })
+        let t = if let Some(t) = tools {
+            build_ephemeral_tools(t)
         } else {
-            serde_json::json!({
-                "model": &self.model, 
-                "max_tokens": self.max_tokens, 
-                "temperature": randomness,
-                "messages": &messages[..],
-                "stream": false, 
-                "system": sp,
-            })
+            serde_json::json!([])
         };
 
-        log::info!("Input tokens (approx): {}", token_estimate);
+        let request_json = serde_json::json!({
+            "model": &self.model, 
+            "max_tokens": self.max_tokens, 
+            "temperature": randomness,
+            "messages": &messages[..],
+            "stream": false, 
+            "system": sp,
+            "tools": t
+        });
 
         let response_json = self.client
             .post(format!("{}/messages", &self.url))
@@ -114,17 +203,21 @@ impl AnthropicClient {
             .send().await?
             .json::<serde_json::Value>().await?;
 
-        let response_map = response_json.as_object()
+        let _ = response_json.as_object()
             .ok_or("Response was null")?;
 
-        if response_map.contains_key("error") {
-            Err(format!("{}", response_map.get("error").ok_or("Error is null")?).into())
+        if let Some(e) = response_json.get("error") {
+            Err(format!("{e}").into())
         } else {
-            let t_in = response_map.get("usage").unwrap().get("input_tokens").unwrap().as_u64().unwrap();
-            let t_out = response_map.get("usage").unwrap().get("output_tokens").unwrap().as_u64().unwrap();
-            log::info!("Input tokens:  {}", t_in);
-            log::info!("Output tokens: {}", t_out);
+            let usage_json = response_json.get("usage")
+                .ok_or("Response does not contain usage")?
+                .clone();
+
+            let usage: AnthropicUsage = serde_json::from_value(usage_json)?;
             let response = serde_json::from_value(response_json)?;
+            self.usage_monitor.record(usage.into());
+            log::info!("{}", self.usage_monitor.tpm_str());
+
             Ok(response)
         }
     }
@@ -155,13 +248,32 @@ fn build_ephemeral_tools(tools: &[ToolDefinition]) -> serde_json::Value {
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn test_sync() -> () {
-
-    }
+    use super::*;
+    use std::thread;
 
     #[tokio::test]
-    async fn test_async() -> () {
+    async fn test_call_model() -> () {
+        let _ = env_logger::builder().filter_level(log::LevelFilter::Debug).try_init();
 
+        let client = AnthropicClient::new().expect("error building client");
+
+        thread::sleep(Duration::from_secs(7));
+
+        let _response = client.call_model(
+            &vec![
+                Message {
+                    role: crate::common::types::Role::User,
+                    content: vec![
+                        ContentBlock::Text { text: vec!["Hello! "; 2000].join("")}
+                    ]
+                }; 8
+            ], 
+            "This is the sys prompt", 
+            None, 
+            0.0
+        ).await
+            .expect("anthropic failed");
+
+        thread::sleep(Duration::from_secs(14));
     }
 }

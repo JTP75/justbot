@@ -31,11 +31,7 @@ pub struct RustBot {
     motd: (chrono::NaiveDate, Option<String>),
     _date: chrono::NaiveDate,
     cwd: PathBuf,
-    collection: Option<String>,
-
-    _input_tokens: Vec<usize>,
-    _output_tokens: Vec<usize>,
-    _total_tokens: Vec<usize>,
+    collection: Option<String>
 }
 
 #[derive(Debug)]
@@ -78,11 +74,7 @@ impl RustBot {
             motd: (Local::now().date_naive(), None),
             _date: Local::now().date_naive(),
             cwd: env::current_dir().unwrap_or(PathBuf::new()),
-            collection: None,
-
-            _input_tokens: vec![],
-            _output_tokens: vec![],
-            _total_tokens: vec![],
+            collection: None
         }
     }
 
@@ -341,10 +333,15 @@ impl RustBot {
         let tooldefs = self.tool_mgr.get_tools_as_tooldefs();
 
         // only allow ten consecutive tool calls
+        let max_tpm = self.client_mgr.chat_client.usage_monitor.max_tpm();
         for _i in 0..10 {
             // get ai response
             let response = rt.block_on(self.client_mgr
                 .call_model_callback(&messages_copy, sys_prompt, Some(&tooldefs), randomness))?;
+
+            let tpm = self.client_mgr.chat_client.usage_monitor.tpm();
+            if tpm.0 > (17 * max_tpm.0 / 20) { log::warn!("Input token rate limit:  {:5} / {:5}", tpm.0, max_tpm.0) }
+            if tpm.1 > (17 * max_tpm.1 / 20) { log::warn!("Output token rate limit: {:5} / {:5}", tpm.1, max_tpm.1) }
 
             let tool_uses: Vec<_> = response.content.iter()
                 .filter_map(|cb| match cb {
@@ -355,10 +352,7 @@ impl RustBot {
                     )), _ => None,
                 }).collect();
 
-            if tool_uses.is_empty() {
-                log::info!("No tool uses requested");
-                return Ok(response);
-            }
+            if tool_uses.is_empty() { return Ok(response); }
             
             messages_copy.push(response.into());
             let curr_tokens = self.client_mgr.chat_client.estimate_token_count_text(&messages_copy);
@@ -369,14 +363,15 @@ impl RustBot {
 
             let mut content: Vec<ContentBlock> = vec![];
             for (id, name, input) in tool_uses.iter() {
-                log::info!("Executing tool '{name}': {input}");
+                log::debug!("Executing tool '{name}': {input}");
 
                 let mut tool_mgr_tmp = std::mem::replace(&mut self.tool_mgr, ToolManager::new());
 
                 let output = match tool_mgr_tmp.execute_tool(self, name, input) {
                     Ok(Some(output)) => {
-                        log::info!("Tool '{}' executed successfully.\nOutput tokens (approx): {}", name, output.len()/4);
+                        log::debug!("Tool '{}' executed successfully.", name);
                         if curr_tokens + output.len()/4 > 190000 {
+                            log::warn!("Approaching conversation input token limit: {} / 200000", curr_tokens);
                             format!("Tool '{}' execution succeeded, but returned too many tokens (~{}). The current conversation is ~{} tokens and the upper limit is 190000 tokens.", 
                                 name, 
                                 output.len()/4,
@@ -387,7 +382,7 @@ impl RustBot {
                         }
                     },
                     Ok(None) => {
-                        log::info!("Tool '{}' executed successfully.", name);
+                        log::debug!("Tool '{}' executed successfully.", name);
                         format!("Tool '{}' executed successfully with no return value.", name)
                     },
                     Err(e) => {
