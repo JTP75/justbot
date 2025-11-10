@@ -2,7 +2,8 @@ use std::{ffi::OsStr, fs, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{common::{config, types::{ContentBlock, Message, Role}}, rustbot::bot::RustBot};
+use crate::{common::config, rustbot::bot::RustBot};
+use crate::connection::anthropic_client::{Message, ContentBlock, Role};
 
 /// Serializable struct that can be saved to a json file
 /// 

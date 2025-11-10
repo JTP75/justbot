@@ -5,8 +5,7 @@ use chrono::{self, Local};
 
 use crate::commands::{self, Command};
 use crate::common::config;
-use crate::common::types::{ContentBlock, Message, MessagesResponse, Role, ToolResultContentBlock};
-use crate::connection::anthropic_client::{AnthropicClient, ToolDefinition};
+use crate::connection::anthropic_client::{AnthropicClient, AnthropicToolDefinition, ContentBlock, Message, MessagesResponse, Role, ToolResultContentBlock};
 use crate::connection::qdrant_client::QdrantClient;
 use crate::connection::voyage_client::VoyageClient;
 use crate::mcp::McpConfig;
@@ -245,7 +244,7 @@ impl RustBot {
     }
 
     /// todo
-    pub fn get_current_tools(&self) -> Vec<ToolDefinition> { self.tool_mgr.get_tools_as_tooldefs() }
+    pub fn get_current_tools(&self) -> Vec<AnthropicToolDefinition> { self.tool_mgr.get_tools_as_tooldefs() }
 
     /// Add a named collection to the vector database
     /// 
@@ -641,7 +640,7 @@ impl ClientManager {
     // callbacks
 
     /// callback for `AnthropicClient::call_model`
-    pub async fn call_model_callback(&self, messages: &Vec<Message>, sys_prompt: &str, tools: Option<&Vec<ToolDefinition>>, randomness: f64) 
+    pub async fn call_model_callback(&self, messages: &Vec<Message>, sys_prompt: &str, tools: Option<&Vec<AnthropicToolDefinition>>, randomness: f64) 
     -> Result<MessagesResponse,Box<dyn std::error::Error>> {
         self.chat_client.call_model(messages, sys_prompt, tools, randomness).await
     }

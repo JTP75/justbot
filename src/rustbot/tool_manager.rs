@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use crate::{connection::anthropic_client::ToolDefinition, mcp::{McpContent, McpTool, client::McpClient}, rustbot::bot::RustBot, tools::{self, Tool}};
+use crate::{connection::anthropic_client::AnthropicToolDefinition, mcp::{McpContent, McpTool, client::McpClient}, rustbot::bot::RustBot, tools::{self, Tool}};
 
 pub struct ToolManager {
     mcp_clients: HashMap<String, McpClient>,
@@ -58,19 +58,19 @@ impl ToolManager {
         }
     }
 
-    pub fn get_mcp_tooldefs(&self) -> Vec<ToolDefinition> {
+    pub fn get_mcp_tooldefs(&self) -> Vec<AnthropicToolDefinition> {
         self.mcp_tools.iter()
             .map(|t| t.clone().into())
             .collect()
     }
 
-    pub fn get_integrated_tooldefs(&self) -> Vec<ToolDefinition> {
+    pub fn get_integrated_tooldefs(&self) -> Vec<AnthropicToolDefinition> {
         self.integrated_tools.iter()
             .map(|t| t.as_tooldef())
             .collect()
     }
 
-    pub fn get_tools_as_tooldefs(&self) -> Vec<ToolDefinition> {
+    pub fn get_tools_as_tooldefs(&self) -> Vec<AnthropicToolDefinition> {
         let mut tooldefs = self.get_mcp_tooldefs();
         let itooldefs = self.get_integrated_tooldefs();
         tooldefs.extend(itooldefs);

@@ -5,7 +5,7 @@ use derive_builder::Builder;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-use crate::{connection::anthropic_client::ToolDefinition, rustbot::bot::RustBot};
+use crate::{connection::anthropic_client::AnthropicToolDefinition, rustbot::bot::RustBot};
 
 pub trait Tool {
     // templates
@@ -27,8 +27,8 @@ pub trait Tool {
     // impls
 
     /// Converts a struct implementing Tool into a ToolDefinition struct
-    fn as_tooldef(&self) -> ToolDefinition {
-        ToolDefinition { 
+    fn as_tooldef(&self) -> AnthropicToolDefinition {
+        AnthropicToolDefinition { 
             name: self.name().into(), 
             description: self.description().into(), 
             input_schema: serde_json::json!(self.input_schema())

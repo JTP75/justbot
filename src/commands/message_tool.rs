@@ -1,4 +1,4 @@
-use crate::{common::types::{ContentBlock, Message, Role}, rustbot::{bot::RustBot, session::SessionManager}};
+use crate::{connection::anthropic_client::{ContentBlock, Message, Role}, rustbot::{bot::RustBot, session::SessionManager}};
 
 use super::{Command, REGISTRY};
 

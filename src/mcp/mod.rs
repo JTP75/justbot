@@ -3,7 +3,7 @@ pub mod client;
 
 use serde::{Deserialize, Serialize};
 
-use crate::connection::anthropic_client::ToolDefinition;
+use crate::connection::anthropic_client::AnthropicToolDefinition;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct McpTool {
@@ -13,9 +13,9 @@ pub struct McpTool {
     pub input_schema: serde_json::Value,
 }
 
-impl Into<ToolDefinition> for McpTool {
-    fn into(self) -> ToolDefinition {
-        ToolDefinition { 
+impl Into<AnthropicToolDefinition> for McpTool {
+    fn into(self) -> AnthropicToolDefinition {
+        AnthropicToolDefinition { 
             name: self.name, 
             description: self.description, 
             input_schema: self.input_schema

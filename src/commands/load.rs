@@ -1,5 +1,5 @@
 use crate::rustbot::{bot::RustBot, session::SessionManager};
-use crate::common::types::{ContentBlock, Role};
+use crate::connection::anthropic_client::{ContentBlock, Role};
 
 use super::{Command, REGISTRY};
 

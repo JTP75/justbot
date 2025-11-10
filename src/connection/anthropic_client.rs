@@ -5,20 +5,63 @@ use dotenvy;
 use reqwest::{Client, ClientBuilder};
 use serde::{Deserialize, Serialize};
 
-use crate::common::{config, types::{ContentBlock, Message, MessagesResponse}};
+// structs
+
+// anthropic core
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub struct Message {
+    pub role: Role,
+    pub content: Vec<ContentBlock>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "snake_case", tag = "type")]
+pub enum ContentBlock {
+    Text { text: String },
+    Image { source: String, media_type: String, data: String },
+    ToolUse { id: String, name: String, input: serde_json::Value },
+    ToolResult { tool_use_id: String, content: Vec<ToolResultContentBlock> },
+}
+
+#[derive(Copy, Clone, Serialize, Deserialize, Debug, PartialEq, Eq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum Role {
+    #[default]
+    User,
+    Assistant,
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq, Serialize)]
+pub struct MessagesResponse {
+    pub id: String,
+    pub r#type: String,
+    pub role: Role,
+    pub content: Vec<ContentBlock>,
+    pub model: String,
+    pub stop_sequence: Option<String>,
+    // TODO add usage here
+}
+
+// anthropic tools
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ToolDefinition {
+pub struct AnthropicToolDefinition {
     pub name: String,
     pub description: String,
     pub input_schema: serde_json::Value,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct CacheUsage {
-    ephemeral_1h_input_tokens: usize,
-    ephemeral_5m_input_tokens: usize
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "snake_case", tag = "type")]
+pub enum ToolResultContentBlock {
+    Text { text: String },
+    Image { source: String, media_type: String, data: String },
+    Document { source: String, media_type: String, data: String },
 }
+
+// anthropic usage
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct AnthropicUsage {
@@ -28,6 +71,30 @@ struct AnthropicUsage {
     input_tokens: usize,
     output_tokens: usize,
     service_tier: String
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct CacheUsage {
+    ephemeral_1h_input_tokens: usize,
+    ephemeral_5m_input_tokens: usize
+}
+
+#[derive(Debug, Clone)]
+pub struct Usage {
+    timestamp: Instant,
+    input_tokens: usize,
+    output_tokens: usize,
+}
+
+// struct impls
+
+impl Into<Message> for MessagesResponse {
+    fn into(self) -> Message { 
+        Message {
+            role: self.role,
+            content: self.content
+        }
+    }
 }
 
 impl Into<Usage> for AnthropicUsage {
@@ -40,12 +107,7 @@ impl Into<Usage> for AnthropicUsage {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct Usage {
-    timestamp: Instant,
-    input_tokens: usize,
-    output_tokens: usize,
-}
+// objects
 
 #[derive(Debug, Clone)]
 pub struct AnthropicUsageMonitor {
@@ -53,6 +115,19 @@ pub struct AnthropicUsageMonitor {
     window_duration: Duration,
     max_tpm: (usize,usize),
 }
+
+#[derive(Debug)]
+pub struct AnthropicClient {
+    client: Client,
+    api_key: String,
+    url: String,
+    api_version: String,
+    model: String,
+    max_tokens: usize,
+    pub usage_monitor: AnthropicUsageMonitor,
+}
+
+// object impls
 
 impl AnthropicUsageMonitor {
     pub fn new() -> Self {
@@ -112,24 +187,13 @@ impl AnthropicUsageMonitor {
     }
 }
 
-#[derive(Debug)]
-pub struct AnthropicClient {
-    client: Client,
-    api_key: String,
-    url: String,
-    api_version: String,
-    model: String,
-    max_tokens: usize,
-    pub usage_monitor: AnthropicUsageMonitor,
-}
-
 impl AnthropicClient {
 
     // public
 
     /// Create a new `AnthropicClient` instance
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let env_path = config::PROJECT_DIRS.config_dir().join(".env");
+        let env_path = crate::common::config::PROJECT_DIRS.config_dir().join(".env");
         dotenvy::from_path(env_path).ok();
 
         let api_key = std::env::var("ANTHROPIC_API_KEY")?;
@@ -167,7 +231,7 @@ impl AnthropicClient {
         &self, 
         messages: &Vec<Message>, 
         sys_prompt: &str, 
-        tools: Option<&Vec<ToolDefinition>>, 
+        tools: Option<&Vec<AnthropicToolDefinition>>, 
         randomness: f64
     ) 
     -> Result<MessagesResponse,Box<dyn std::error::Error>> {
@@ -223,6 +287,8 @@ impl AnthropicClient {
     }
 }
 
+// private helpers
+
 fn build_ephemeral_sys_prompt(sys_prompt: &str) -> serde_json::Value {
     serde_json::json!([{
         "type": "text",
@@ -231,7 +297,7 @@ fn build_ephemeral_sys_prompt(sys_prompt: &str) -> serde_json::Value {
     }])
 }
 
-fn build_ephemeral_tools(tools: &[ToolDefinition]) -> serde_json::Value {
+fn build_ephemeral_tools(tools: &[AnthropicToolDefinition]) -> serde_json::Value {
     let mut tool_defs: Vec<serde_json::Value> = tools.iter()
         .map(|t| serde_json::json!(t))
         .collect();
@@ -262,7 +328,7 @@ mod tests {
         let _response = client.call_model(
             &vec![
                 Message {
-                    role: crate::common::types::Role::User,
+                    role: Role::User,
                     content: vec![
                         ContentBlock::Text { text: vec!["Hello! "; 2000].join("")}
                     ]
