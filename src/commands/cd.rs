@@ -1,6 +1,6 @@
 use std::{env, path::PathBuf};
 
-use crate::app::{bot::RustBot, session::SessionManager};
+use crate::app::{bot::PuetceApp, session::SessionManager};
 
 use super::{Command, REGISTRY};
 
@@ -11,7 +11,7 @@ impl Command for CdCommand {
     fn aliases(&self) -> Vec<&str> { vec![] }
     fn desc(&self) -> &str { "Changes the cwd of rustbot to a new directory" }
     fn help(&self) -> &str { "Usage: cd <new_directory>\nNew directory to navigate to." }
-    fn exec(&self, _sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, _sm: &mut SessionManager, bot: &mut PuetceApp, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let path_str = args.first().ok_or("Must specify new location")?;
         let path = PathBuf::try_from(path_str)?;
         let path = path.canonicalize()?;

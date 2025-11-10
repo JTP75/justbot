@@ -2,7 +2,7 @@ use std::{ffi::OsStr, fs, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{common::config, app::bot::RustBot};
+use crate::{common::config, app::bot::PuetceApp};
 use crate::connection::anthropic_client::{Message, ContentBlock, Role};
 
 /// Serializable struct that can be saved to a json file
@@ -36,7 +36,7 @@ impl SessionManager {
     }
 
     /// Save conversation and topic string to a file
-    pub fn save_session(&mut self, bot: &mut RustBot, filename_arg: Option<String>) -> Result<(),Box<dyn std::error::Error>> {
+    pub fn save_session(&mut self, bot: &mut PuetceApp, filename_arg: Option<String>) -> Result<(),Box<dyn std::error::Error>> {
         let path = if let Some(filename) = filename_arg {
             let path = PathBuf::from(filename.clone());
             let stem = path.file_stem()
@@ -57,7 +57,7 @@ impl SessionManager {
     }
 
     /// Load conversation and topic string from a file
-    pub fn load_session(&mut self, bot: &mut RustBot, filename: String) -> Result<(),Box<dyn std::error::Error>> {
+    pub fn load_session(&mut self, bot: &mut PuetceApp, filename: String) -> Result<(),Box<dyn std::error::Error>> {
         let path = self.save_dir.join(filename);
         self.load_session_from_json(path.clone(), bot)
     }
@@ -81,7 +81,7 @@ impl SessionManager {
         format!("{file_stem}.json")
     }
 
-    fn generate_topic(&self, bot: &RustBot) -> Result<String, Box<dyn std::error::Error>> {
+    fn generate_topic(&self, bot: &PuetceApp) -> Result<String, Box<dyn std::error::Error>> {
         let mut convo_copy = bot.get_messages();
         let topic_prompt = Message {
             role: Role::User,
@@ -103,7 +103,7 @@ impl SessionManager {
         }
     }
 
-    pub fn save_motd(&self, bot: &RustBot) -> Result<(),Box<dyn std::error::Error>> {
+    pub fn save_motd(&self, bot: &PuetceApp) -> Result<(),Box<dyn std::error::Error>> {
         if !self.data_dir.exists() { fs::create_dir_all(&self.data_dir)?; }
 
         let json = serde_json::to_string_pretty(&bot.get_motd())?;
@@ -112,7 +112,7 @@ impl SessionManager {
         Ok(fs::write(&self.data_dir.join(filename), json)?)
     }
 
-    pub fn load_motd(&self, bot: &mut RustBot) -> Result<(),Box<dyn std::error::Error>> {
+    pub fn load_motd(&self, bot: &mut PuetceApp) -> Result<(),Box<dyn std::error::Error>> {
         let filename: String = crate::common::config
             ::get_config("bot_config.json","motd_filename")?;
         let json = fs::read_to_string(&self.data_dir.join(filename))?;
@@ -120,7 +120,7 @@ impl SessionManager {
         Ok(bot.set_motd(motd))
     }
 
-    fn save_session_as_json(&mut self, path: PathBuf, bot: &RustBot) -> Result<(),Box<dyn std::error::Error>> {        
+    fn save_session_as_json(&mut self, path: PathBuf, bot: &PuetceApp) -> Result<(),Box<dyn std::error::Error>> {        
         if !self.save_dir.exists() { fs::create_dir_all(&self.save_dir)?; }
 
         let session = Session { 
@@ -137,7 +137,7 @@ impl SessionManager {
         Ok(())
     }
 
-    fn load_session_from_json(&mut self, path: PathBuf, bot: &mut RustBot) -> Result<(),Box<dyn std::error::Error>> {
+    fn load_session_from_json(&mut self, path: PathBuf, bot: &mut PuetceApp) -> Result<(),Box<dyn std::error::Error>> {
         let json = fs::read_to_string(&path)?;
         let session: Session = serde_json::from_str(&json)?;
 

@@ -16,7 +16,7 @@ use std::{sync::{Arc, atomic::{AtomicBool, Ordering}}, thread};
 use figlet_rs::FIGfont;
 use rustyline::{self,error::ReadlineError};
 
-use crate::{app::{bot::RustBot, session::SessionManager}};
+use crate::{app::{bot::PuetceApp, session::SessionManager}};
 
 fn main() {
 
@@ -27,7 +27,7 @@ fn main() {
 
     // init bot and session mgr
     println!("\x1b[1;34m>>\x1b[0m Initializing bot and session... ");
-    let mut bot = RustBot::new(crate::common::config
+    let mut bot = PuetceApp::new(crate::common::config
         ::get_config::<String>("bot_config.rs", "default_name")
         .unwrap_or("rustbot".into()));
     let mut sm = SessionManager::new();
@@ -133,7 +133,7 @@ fn main() {
 }
 
 /// callback for handling bot commands
-fn handle_bot_command(sm: &mut SessionManager, bot: &mut RustBot, input: &str) -> Option<String> {
+fn handle_bot_command(sm: &mut SessionManager, bot: &mut PuetceApp, input: &str) -> Option<String> {
     match bot.handle_command(sm, input) {
         Ok(Some(response)) => Some(format!("\x1b[1;32m>>\x1b[0m {}", response)),
         Ok(None) => None,

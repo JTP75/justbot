@@ -1,4 +1,4 @@
-use crate::{connection::anthropic_client::{ContentBlock, Message, Role}, app::{bot::RustBot, session::SessionManager}};
+use crate::{connection::anthropic_client::{ContentBlock, Message, Role}, app::{bot::PuetceApp, session::SessionManager}};
 
 use super::{Command, REGISTRY};
 
@@ -9,7 +9,7 @@ impl Command for NewsCommand {
     fn aliases(&self) -> Vec<&str> { vec![] }
     fn desc(&self) -> &str { "Use claude to retrieve news related to a topic" }
     fn help(&self) -> &str { "Usage: news [<query>]\nQuery is optional. Use it to find news articles related to a particular or general topic, focus on particular article, or retrieve info about a certain article" }
-    fn exec(&self, _sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, _sm: &mut SessionManager, bot: &mut PuetceApp, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let user_message = Message{
             role: Role::User,
             content: vec![ContentBlock::Text {

@@ -1,4 +1,4 @@
-use crate::app::{bot::RustBot, session::SessionManager};
+use crate::app::{bot::PuetceApp, session::SessionManager};
 
 use super::{Command, REGISTRY};
 
@@ -9,7 +9,7 @@ impl Command for SaveCommand {
     fn aliases(&self) -> Vec<&str> { vec!["w"] }
     fn desc(&self) -> &str { "Save the current claude messages to a file" }
     fn help(&self) -> &str { "Usage: save [<filename>]\nFilename is optional: \n\t- If this a loaded session, the previous save will be overwritten.\n\t- If this is not a loaded session, rustbot will generate a filename." }
-    fn exec(&self, sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, sm: &mut SessionManager, bot: &mut PuetceApp, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let filename_arg = match args.first() {
             Some(filename) => Some(filename.to_string()),
             None => None

@@ -15,7 +15,7 @@ use crate::app::session::SessionManager;
 // structs
 
 #[derive(Debug)]
-pub struct RustBot {
+pub struct PuetceApp {
 
     // immut fields
     name: String,
@@ -42,7 +42,7 @@ pub struct ClientManager {
 
 // impls
 
-impl RustBot {
+impl PuetceApp {
 
     // public
 
@@ -783,7 +783,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_embed_a_file() {
-        let bot = RustBot::new("testbot");
+        let bot = PuetceApp::new("testbot");
         let coll_name = "test_collection_botrs";
 
         let path = PathBuf::from("./README.md");

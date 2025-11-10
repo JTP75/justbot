@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use once_cell::sync::Lazy;
 
-use crate::app::{bot::RustBot, session::SessionManager};
+use crate::app::{bot::PuetceApp, session::SessionManager};
 
 pub trait Command {
     /// Returns the formal name of the command
@@ -19,7 +19,7 @@ pub trait Command {
     /// Executes the command
     /// 
     /// Returns response wrapped in a Result and Option
-    fn exec(&self, sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>>;
+    fn exec(&self, sm: &mut SessionManager, bot: &mut PuetceApp, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>>;
 }
 
 pub type CommandFactory = fn() -> Box<dyn Command>;

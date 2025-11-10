@@ -1,4 +1,4 @@
-use crate::app::{bot::RustBot, session::SessionManager};
+use crate::app::{bot::PuetceApp, session::SessionManager};
 
 use super::{Command, REGISTRY};
 
@@ -9,7 +9,7 @@ impl Command for GetToolsCommand {
     fn aliases(&self) -> Vec<&str> { vec!["tools", "list-tools"] }
     fn desc(&self) -> &str { "List all tools (MCP and Integrated) currently available to anthropic (see message-tool)" }
     fn help(&self) -> &str { "Usage: get-tools\nTakes no arguments" }
-    fn exec(&self, _sm: &mut SessionManager, bot: &mut RustBot, _args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, _sm: &mut SessionManager, bot: &mut PuetceApp, _args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let tool_disp = bot.get_current_tools()
             .iter()
             .map(|tooldef| format!("{:30} {}", tooldef.name, tooldef.description))

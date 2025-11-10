@@ -1,4 +1,4 @@
-use crate::{connection::anthropic_client::{ContentBlock, Message, Role}, app::{bot::RustBot, session::SessionManager}};
+use crate::{connection::anthropic_client::{ContentBlock, Message, Role}, app::{bot::PuetceApp, session::SessionManager}};
 
 use super::{Command, REGISTRY};
 
@@ -9,7 +9,7 @@ impl Command for MessageKnowledgeCommand {
     fn aliases(&self) -> Vec<&str> { vec!["msg-knowledge", "msgk", "knowledge"] }
     fn desc(&self) -> &str { "Send a message to claude using anthropic api with tools enabled with a sys prompt telling claude to use the knowledge" }
     fn help(&self) -> &str { "Usage: message-tool <message>\nMessage does not need to be in quotation marks" }
-    fn exec(&self, _sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, _sm: &mut SessionManager, bot: &mut PuetceApp, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let user_message = Message{
             role: Role::User,
             content: vec![ContentBlock::Text {

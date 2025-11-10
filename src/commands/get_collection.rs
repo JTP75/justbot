@@ -1,4 +1,4 @@
-use crate::app::{bot::RustBot, session::SessionManager};
+use crate::app::{bot::PuetceApp, session::SessionManager};
 
 use super::{Command, REGISTRY};
 
@@ -9,7 +9,7 @@ impl Command for GetCollectionCommand {
     fn aliases(&self) -> Vec<&str> { vec!["getc"] }
     fn desc(&self) -> &str { "Get information about the currently selected vector database collection" }
     fn help(&self) -> &str { "Usage: get-collection\nTakes no arguments" }
-    fn exec(&self, _sm: &mut SessionManager, bot: &mut RustBot, _args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, _sm: &mut SessionManager, bot: &mut PuetceApp, _args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
         match bot.get_current_collection() {
             Some(c) => Ok(Some(format!("The current collection is '{c}'"))),
             None => Ok(Some(format!("No collection is currently selected. Set using set-collection")))

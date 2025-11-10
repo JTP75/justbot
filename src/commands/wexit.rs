@@ -1,4 +1,4 @@
-use crate::app::{bot::RustBot, session::SessionManager};
+use crate::app::{bot::PuetceApp, session::SessionManager};
 
 use super::{Command, REGISTRY};
 
@@ -9,7 +9,7 @@ impl Command for WExitCommand {
     fn aliases(&self) -> Vec<&str> { vec!["wq"] }
     fn desc(&self) -> &str { "Save the current conversation and print a friendly farewell" }
     fn help(&self) -> &str { "Usage: wexit\nTakes no arguments" }
-    fn exec(&self, sm: &mut SessionManager, bot: &mut RustBot, _args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, sm: &mut SessionManager, bot: &mut PuetceApp, _args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
         match sm.save_session(bot,None) {
             Ok(_) => Ok(Some(format!("Saved session to {}. Goodbye!", sm.current.clone().as_os_str().display()))),
             Err(e) => Err(format!("Failed to save session to {}: {}. Goodbye!", sm.current.clone().as_os_str().display(),e).into())

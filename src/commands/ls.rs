@@ -1,6 +1,6 @@
 use std::fs;
 
-use crate::app::{bot::RustBot, session::SessionManager};
+use crate::app::{bot::PuetceApp, session::SessionManager};
 
 use super::{Command, REGISTRY};
 
@@ -11,7 +11,7 @@ impl Command for LsCommand {
     fn aliases(&self) -> Vec<&str> { vec![] }
     fn desc(&self) -> &str { "List directories relative to the cwd" }
     fn help(&self) -> &str { "Usage: ls\nTakes no arguments" }
-    fn exec(&self, _sm: &mut SessionManager, bot: &mut RustBot, _args: &Vec<String>) 
+    fn exec(&self, _sm: &mut SessionManager, bot: &mut PuetceApp, _args: &Vec<String>) 
     -> Result<Option<String>, Box<dyn std::error::Error>> {
         let mut dirs = fs::read_dir(bot.get_cwd())?
             .filter_map(|entry| match entry { Ok(entry)=>Some(entry.path()), _=>None })

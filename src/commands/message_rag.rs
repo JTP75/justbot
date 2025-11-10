@@ -1,4 +1,4 @@
-use crate::{connection::anthropic_client::{ContentBlock, Message, Role}, app::{bot::RustBot, session::SessionManager}};
+use crate::{connection::anthropic_client::{ContentBlock, Message, Role}, app::{bot::PuetceApp, session::SessionManager}};
 
 use super::{Command, REGISTRY};
 
@@ -9,7 +9,7 @@ impl Command for MessageRagCommand {
     fn aliases(&self) -> Vec<&str> { vec!["msg-rag", "rag"] }
     fn desc(&self) -> &str { "Send a message to claude using anthropic api with RAG (retrieval augmented generation)" }
     fn help(&self) -> &str { "Usage: message-rag <message>\nMessage does not need to be in quotation marks. Currently uses default_collection for RAG" }
-    fn exec(&self, _sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, _sm: &mut SessionManager, bot: &mut PuetceApp, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let collection_name: String = match bot.get_current_collection() {
             Some(cn) => cn,
             None => crate::common::config

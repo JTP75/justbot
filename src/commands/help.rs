@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::app::{bot::RustBot, session::SessionManager};
+use crate::app::{bot::PuetceApp, session::SessionManager};
 
 use super::{Command, REGISTRY};
 
@@ -11,7 +11,7 @@ impl Command for HelpCommand {
     fn aliases(&self) -> Vec<&str> { vec![] }
     fn desc(&self) -> &str { "Get help on command usage" }
     fn help(&self) -> &str { "Usage: help [<command>]\nShows help and desc for specified command. If no command is specified, lists available commands." }
-    fn exec(&self, _sm: &mut SessionManager, _bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, _sm: &mut SessionManager, _bot: &mut PuetceApp, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
         match args.first() {
             Some(command_name) => {
                 let command = match REGISTRY.lock().unwrap().get(&command_name) {

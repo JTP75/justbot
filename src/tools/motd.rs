@@ -2,7 +2,7 @@ use std::fs;
 
 use chrono::Local;
 
-use crate::{common::config, app::bot::RustBot, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
+use crate::{common::config, app::bot::PuetceApp, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
 
 use super::{Tool, REGISTRY};
 
@@ -18,7 +18,7 @@ impl Tool for GetMotdTool {
             .build()
             .unwrap()
     }
-    fn exec(&self, bot: &mut RustBot, _args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, bot: &mut PuetceApp, _args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>> {
         if let (date, Some(message)) = bot.get_motd() {
             if date == Local::now().date_naive() {
                 Ok(Some(message))
@@ -40,7 +40,7 @@ impl Tool for SetMotdTool {
             .build()
             .expect("Tool schema builder failed")
     }
-    fn exec(&self, bot: &mut RustBot, args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, bot: &mut PuetceApp, args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let new_motd = args.get("new_motd").ok_or("Arguments are missing a paramater 'new_motd'")?
             .as_str().ok_or("Unexpected argument type for parameter 'new_motd'")?;
 

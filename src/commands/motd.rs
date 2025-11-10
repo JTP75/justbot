@@ -1,6 +1,6 @@
 use chrono::Local;
 
-use crate::{connection::anthropic_client::{ContentBlock, Message, Role}, app::{bot::RustBot, session::SessionManager}};
+use crate::{connection::anthropic_client::{ContentBlock, Message, Role}, app::{bot::PuetceApp, session::SessionManager}};
 
 use super::{Command, REGISTRY};
 
@@ -11,7 +11,7 @@ impl Command for MotdCommand {
     fn aliases(&self) -> Vec<&str> { vec![] }
     fn desc(&self) -> &str { "Display today's motd (Message of the day)" }
     fn help(&self) -> &str { "Usage: motd [<options>]\n--reroll\t- Generate a new motd" }
-    fn exec(&self, sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, sm: &mut SessionManager, bot: &mut PuetceApp, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
         
         let todays_date = Local::now().date_naive();
         let motd = bot.get_motd();

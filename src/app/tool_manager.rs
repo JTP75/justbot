@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use crate::{connection::anthropic_client::AnthropicToolDefinition, mcp::{McpContent, McpTool, client::McpClient}, app::bot::RustBot, tools::{self, Tool}};
+use crate::{connection::anthropic_client::AnthropicToolDefinition, mcp::{McpContent, McpTool, client::McpClient}, app::bot::PuetceApp, tools::{self, Tool}};
 
 pub struct ToolManager {
     mcp_clients: HashMap<String, McpClient>,
@@ -81,7 +81,7 @@ impl ToolManager {
     /// 
     /// - this only supports tools that return text for now
     /// - this will prioritize integrated tools if there are conflicting names
-    pub fn execute_tool(&mut self, bot: &mut RustBot, tool_name: &str, args: &serde_json::Value) 
+    pub fn execute_tool(&mut self, bot: &mut PuetceApp, tool_name: &str, args: &serde_json::Value) 
     -> Result<Option<String>, Box<dyn std::error::Error>> {
         if self.get_integrated_tooldefs().iter().any(|it| it.name==tool_name) {
             log::info!("Executing integrated tool '{}'", tool_name);
@@ -97,7 +97,7 @@ impl ToolManager {
         }
     }
 
-    pub fn execute_mcp_tool(&mut self, _bot: &mut RustBot, t_name: &str, args: &serde_json::Value) 
+    pub fn execute_mcp_tool(&mut self, _bot: &mut PuetceApp, t_name: &str, args: &serde_json::Value) 
     -> Result<Option<String>, Box<dyn std::error::Error>> {
         let c_name = self.tool_client_map.get(t_name)
             .ok_or(format!("No registered client for tool '{t_name}'"))?;
@@ -115,7 +115,7 @@ impl ToolManager {
         Ok(Some(text))
     }
 
-    pub fn execute_integrated_tool(&mut self, bot: &mut RustBot, t_name: &str, args: &serde_json::Value)
+    pub fn execute_integrated_tool(&mut self, bot: &mut PuetceApp, t_name: &str, args: &serde_json::Value)
     -> Result<Option<String>, Box<dyn std::error::Error>> {
         let tool = self.integrated_tools.iter().find(|it| it.name()==t_name)
             .ok_or(format!("No registered tool with name '{t_name}'"))?;

@@ -1,4 +1,4 @@
-use crate::{app::bot::RustBot, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
+use crate::{app::bot::PuetceApp, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
 
 use super::{Tool, REGISTRY};
 
@@ -14,7 +14,7 @@ impl Tool for RagTool {
             .build()
             .expect("Tool schema builder failed")
     }
-    fn exec(&self, bot: &mut RustBot, args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, bot: &mut PuetceApp, args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let query = args.get("query").ok_or("Arguments are missing a paramater 'query'")?
             .as_str().ok_or("Unexpected argument type for parameter 'query'")?;
         let count = args.get("number_of_documents").ok_or("Arguments are missing a paramater 'number_of_documents'")?

@@ -2,7 +2,7 @@
 
 use chrono::{Duration, Local};
 
-use crate::{app::bot::RustBot, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
+use crate::{app::bot::PuetceApp, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
 
 use super::{Tool, REGISTRY};
 

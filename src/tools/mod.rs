@@ -5,7 +5,7 @@ use derive_builder::Builder;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-use crate::{connection::anthropic_client::AnthropicToolDefinition, app::bot::RustBot};
+use crate::{connection::anthropic_client::AnthropicToolDefinition, app::bot::PuetceApp};
 
 pub trait Tool {
     // templates
@@ -22,7 +22,7 @@ pub trait Tool {
     /// Executes the tool
     /// 
     /// Returns response wrapped in a Result and Option
-    fn exec(&self, bot: &mut RustBot, args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>>;
+    fn exec(&self, bot: &mut PuetceApp, args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>>;
 
     // impls
 

@@ -1,4 +1,4 @@
-use crate::app::{bot::RustBot, session::SessionManager};
+use crate::app::{bot::PuetceApp, session::SessionManager};
 
 use super::{Command, REGISTRY};
 
@@ -9,7 +9,7 @@ impl Command for ExitCommand {
     fn aliases(&self) -> Vec<&str> { vec![ "q","quit" ] }
     fn desc(&self) -> &str { "Print a friendly farewell" }
     fn help(&self) -> &str { "Usage: exit\nTakes no arguments" }
-    fn exec(&self, _sm: &mut SessionManager, _bot: &mut RustBot, _args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, _sm: &mut SessionManager, _bot: &mut PuetceApp, _args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
         Ok(Some(format!("Exiting. Goodbye!")))
     }
 }

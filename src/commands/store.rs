@@ -1,6 +1,6 @@
 use std::fs;
 
-use crate::app::{bot::RustBot, session::SessionManager};
+use crate::app::{bot::PuetceApp, session::SessionManager};
 
 use super::{Command, REGISTRY};
 
@@ -11,7 +11,7 @@ impl Command for StoreCommand {
     fn aliases(&self) -> Vec<&str> { vec![] }
     fn desc(&self) -> &str { "Store a path to the vector database\n\n\t- if the path resolves to a file, that file will be stored. \n\t- if it resolves to a directory, this command will recursively store all files in the directory to the vector database.\n\nThis currently works for UTF-8 encoded files." }
     fn help(&self) -> &str { "Usage: store <full/path/to/file>\nFile must contain readable text" }
-    fn exec(&self, _sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, _sm: &mut SessionManager, bot: &mut PuetceApp, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let collection_name: String = match bot.get_current_collection() {
             Some(cn) => cn,
             None => crate::common::config

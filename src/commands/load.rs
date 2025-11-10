@@ -1,4 +1,4 @@
-use crate::app::{bot::RustBot, session::SessionManager};
+use crate::app::{bot::PuetceApp, session::SessionManager};
 use crate::connection::anthropic_client::{ContentBlock, Role};
 
 use super::{Command, REGISTRY};
@@ -10,7 +10,7 @@ impl Command for LoadCommand {
     fn aliases(&self) -> Vec<&str> { vec![] }
     fn desc(&self) -> &str { "Load a session file over the current session" }
     fn help(&self) -> &str { "Usage: load <filename>\nFilename must be specified" }
-    fn exec(&self, sm: &mut SessionManager, bot: &mut RustBot, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, sm: &mut SessionManager, bot: &mut PuetceApp, args: &Vec<String>) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let filename = match args.first() {
             Some(filename) => filename.to_string(),
             None => { return Err(format!("Must specify file to load.").into()) }
