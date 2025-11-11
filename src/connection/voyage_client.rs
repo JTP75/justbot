@@ -2,7 +2,7 @@
 
 use reqwest::{Client, ClientBuilder};
 
-use crate::common::config;
+use crate::{common::config, connection::EmbeddingClient};
 
 #[derive(Debug)]
 pub struct VoyageClient {
@@ -13,7 +13,6 @@ pub struct VoyageClient {
 }
 
 impl VoyageClient {
-
     /// Create a new instance of `VoyageClient`
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         let env_path = config::PROJECT_DIRS.config_dir().join(".env");
@@ -29,13 +28,12 @@ impl VoyageClient {
             api_key: api_key,
         })
     }
+}
 
-    /// Get the embedding for input text
-    /// 
-    /// - `input_text` can be either "document" or "query"
-    ///     - use "document" to embed the contents of a file
-    ///     - use "query" to get the query vector for a search query
-    pub async fn get_embedding(&self, text: &str, input_type: &str) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
+#[async_trait::async_trait]
+impl EmbeddingClient for VoyageClient {
+    async fn get_embedding(&self, text: &str, input_type: &str) 
+    -> Result<Vec<f32>, Box<dyn std::error::Error>> {
         let response = self.client
             .post(&self.url)
             .header("Authorization", format!("Bearer {}", self.api_key))
@@ -57,7 +55,8 @@ impl VoyageClient {
         }
     }
 
-    pub async fn get_embeddings(&self, texts: Vec<&str>, input_type: &str) -> Result<Vec<Vec<f32>>, Box<dyn std::error::Error>> {
+    async fn get_embeddings(&self, texts: Vec<&str>, input_type: &str) 
+    -> Result<Vec<Vec<f32>>, Box<dyn std::error::Error>> {
         let response = self.client
             .post(&self.url)
             .header("Authorization", format!("Bearer {}", self.api_key))

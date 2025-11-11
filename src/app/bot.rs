@@ -5,7 +5,9 @@ use chrono::{self, Local};
 
 use crate::commands::{self, Command};
 use crate::common::config;
+use crate::connection::EmbeddingClient;
 use crate::connection::anthropic_client::{AnthropicClient, AnthropicToolDefinition, ContentBlock, Message, MessagesResponse, Role, ToolResultContentBlock};
+use crate::connection::local_embedding_client::LocalClient;
 use crate::connection::qdrant_client::QdrantClient;
 use crate::connection::voyage_client::VoyageClient;
 use crate::mcp::McpConfig;
@@ -37,7 +39,7 @@ pub struct PuetceApp {
 pub struct ClientManager {
     pub chat_client: AnthropicClient,
     pub vdb_client: QdrantClient,
-    pub embedding_client: VoyageClient,
+    pub embedding_client: Box<dyn EmbeddingClient>,
 }
 
 // impls
@@ -56,14 +58,27 @@ impl PuetceApp {
     /// let bot = RustBot::new("name");
     /// ```
     pub fn new(name: impl Into<String>) -> Self {
-
+        let use_voyage: bool = config
+            ::get_config("vectordb_config.json", "use_voyage_embedding")
+            .expect("get config failed");
+        let use_local: bool = config
+            ::get_config("vectordb_config.json", "use_local_embedding")
+            .expect("get config failed");
+        
+        let embedding_client: Box<dyn EmbeddingClient> = if use_voyage {
+            Box::new(VoyageClient::new().unwrap())
+        } else if use_local {
+            Box::new(LocalClient::new().unwrap())
+        } else {
+            Box::new(LocalClient::new().unwrap())
+        };
 
         Self { 
             name: name.into(), 
             client_mgr: ClientManager {
                 chat_client: AnthropicClient::new().unwrap(),
                 vdb_client: QdrantClient::new().unwrap(),
-                embedding_client: VoyageClient::new().unwrap(),
+                embedding_client
             },
 
             tool_mgr: ToolManager::new(),
@@ -629,10 +644,6 @@ impl PuetceApp {
 
         Ok(( command, args ))
     }
-
-    fn _get_chat_client(&self) -> &AnthropicClient { &self.client_mgr.chat_client }
-    fn _get_vdb_client(&self) -> &QdrantClient { &self.client_mgr.vdb_client }
-    fn _get_mbed_client(&self) -> &VoyageClient { &self.client_mgr.embedding_client }
 }
 
 impl ClientManager {
@@ -788,7 +799,7 @@ mod tests {
 
         let path = PathBuf::from("./README.md");
 
-        let _result = bot._get_vdb_client().add_collection(coll_name).await;
+        // let _result = bot._get_vdb_client().add_collection(coll_name).await;
 
         let result = bot.client_mgr.embed_file(coll_name, &path).await;
         assert!(result.is_ok(), "{}", result.unwrap_err())
