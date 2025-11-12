@@ -2,6 +2,7 @@ pub mod client;
 // pub mod manager;
 
 use serde::{Deserialize, Serialize};
+use derive_builder::Builder;
 
 use crate::connection::anthropic_client::AnthropicToolDefinition;
 
@@ -48,4 +49,11 @@ pub struct McpServerConfig {
 #[derive(Debug, Deserialize, Serialize, Default)]
 pub struct McpConfig {
     pub mcp_servers: Vec<McpServerConfig>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Default, Builder)]
+pub struct McpRoot {
+    uri: String,
+    #[builder(default = None)]
+    name: Option<String>
 }

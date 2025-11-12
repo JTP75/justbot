@@ -4,7 +4,7 @@ use std::{
 
 use serde_json::Value;
 
-use crate::mcp::{McpTool, McpToolResult};
+use crate::mcp::{McpRoot, McpRootBuilder, McpTool, McpToolResult};
 
 #[derive(Debug)]
 pub struct McpClient {
@@ -12,6 +12,7 @@ pub struct McpClient {
     reader: BufReader<ChildStdout>,
     writer: BufWriter<ChildStdin>,
     id: u64,
+    roots: Vec<McpRoot>,
 }
 
 impl Drop for McpClient {
@@ -23,6 +24,9 @@ impl Drop for McpClient {
 impl McpClient {
     pub fn new(command: &str, args: &[&str], env: Option<HashMap<String, String>>) 
     -> Result<Self, Box<dyn std::error::Error>> {
+        let sd: String = crate::common::config
+            ::get_config("bot_config.json", "start_dir")?;
+
         let mut command_obj = Command::new(command);
         command_obj
             .args(args)
@@ -36,8 +40,9 @@ impl McpClient {
         let reader = BufReader::new(process.stdout.take().unwrap());
         let writer = BufWriter::new(process.stdin.take().unwrap());
         let id = 0;
+        let roots = vec![McpRootBuilder::default().uri(format!("file://{sd}")).build()?];
 
-        let mut client = Self { process, reader, writer, id };
+        let mut client = Self { process, reader, writer, id, roots };
         client.init()?;
 
         Ok(client)
@@ -93,10 +98,14 @@ impl McpClient {
             "method": "initialize",
             "params": {
                 "protocolVersion": "2024-11-05",
-                "capabilities": {},
+                "capabilities": {
+                    "roots": {
+                        "listChanged": true
+                    }
+                },
                 "clientInfo": {
-                    "name": "rustbot",
-                    "version": "0.1.0"
+                    "name": "puetce",
+                    "version": "0.2.0"
                 }
             },
         });
@@ -109,6 +118,19 @@ impl McpClient {
             "method": "notifications/initialized"
         });
         self.send_request(&notification)?;
+
+        Ok(())
+    }
+
+    fn handle_roots_request(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+
+        let response = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": self.next_id(),
+            "result": {
+                "roots": self.roots
+            }
+        });
 
         Ok(())
     }
