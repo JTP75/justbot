@@ -22,27 +22,6 @@ impl LocalClient {
 
 #[async_trait::async_trait]
 impl EmbeddingClient for LocalClient {
-    async fn get_embedding(&self, text: &str, input_type: &str) 
-    -> Result<Vec<f32>, Box<dyn std::error::Error>> {
-        let response = self.client
-            .post(&self.url)
-            .json(&serde_json::json!({
-                "texts": [text],
-                "type": input_type
-            }))
-            .send().await?
-            .json::<serde_json::Value>().await?;
-
-        let result: Vec<f32> = response["embeddings"]
-            .as_array().ok_or("embeddings not found in response")?
-            .first().ok_or("embeddings list empty")?
-            .as_array().ok_or("unexpected embedding type")?
-            .iter().map(|val| val.as_f64().unwrap_or(0.0) as f32)
-            .collect();
-        
-        Ok(result)
-    }
-
     async fn get_embeddings(&self, texts: Vec<&str>, input_type: &str) 
     -> Result<Vec<Vec<f32>>, Box<dyn std::error::Error>> {
         let response = self.client
@@ -74,7 +53,7 @@ mod test {
     async fn test_embed_some_text() {
         let client: Box<dyn EmbeddingClient> = Box::new(LocalClient::new().unwrap());
 
-        let embedding = client.get_embedding("Hello this is some text", "document").await;
+        let embedding = client.get_embeddings(vec!["Hello this is some text"], "document").await;
         assert!(embedding.is_ok());
         assert_eq!(embedding.unwrap().len(), 768);
     }

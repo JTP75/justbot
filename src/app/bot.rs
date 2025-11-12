@@ -690,7 +690,8 @@ impl ClientManager {
         // embed content and path
         //      fixme theres a better way to group embeddings...
         let text_data = format!("{{\"file_path\": \"{}\", \"content\": \"{}\"}}", path_str, content);
-        let embedding = self.embedding_client.get_embedding(&text_data, "document").await?;
+        let embedding = self.embedding_client.get_embeddings(vec![&text_data], "document").await?
+            .first().ok_or("embedding respone empty")?.clone();
 
         // store content to vdb
         // (make a new collection if it doesnt exist)
@@ -760,7 +761,8 @@ impl ClientManager {
     -> Result<serde_json::Value, Box<dyn std::error::Error>> {
 
         // vectorize query
-        let qvec = self.embedding_client.get_embedding(query, "query").await?;
+        let qvec = self.embedding_client.get_embeddings(vec![query], "query").await?
+            .first().ok_or("embedding respone empty")?.clone();
 
         let config_limit = crate::common::config
             ::get_config("vectordb_config.json", "default_search_limit")?;
