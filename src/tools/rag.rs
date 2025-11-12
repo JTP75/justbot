@@ -23,6 +23,8 @@ impl Tool for RagTool {
         let count = args.get("number_of_documents").ok_or("Arguments are missing a paramater 'number_of_documents'")?
             .as_u64().ok_or("Unexpected argument type for parameter 'number_of_documents'")?;
 
+        log::info!("Executing rag tool for {} results: {}", count, query);
+
         let default_collection = crate::common::config
             ::get_config("bot_config.json", "default_collection")?;
         let results = bot.retrieve_from_vdb(&bot.get_current_collection().unwrap_or(default_collection), query, Some(count))?;

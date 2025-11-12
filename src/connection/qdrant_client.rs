@@ -145,7 +145,6 @@ impl QdrantClient {
 #[cfg(test)]
 mod test {
     use super::*;
-    use rand::Rng;
 
     const TEST_COLLECTION_NAME: &str = "this_is_a_test_delete_me";
     const DIM: usize = 1536;

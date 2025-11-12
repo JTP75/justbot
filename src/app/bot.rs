@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use chrono::{self, Local};
 
 use crate::commands::{self, Command};
-use crate::common::config;
+use crate::common::{chunking, config};
 use crate::connection::EmbeddingClient;
 use crate::connection::anthropic_client::{AnthropicClient, AnthropicToolDefinition, ContentBlock, Message, MessagesResponse, Role, ToolResultContentBlock};
 use crate::connection::local_embedding_client::LocalClient;
@@ -661,33 +661,33 @@ impl ClientManager {
     pub async fn embed_files(&self, collection_name: &str, file_paths: Vec<&Path>) 
     -> Result<(), Box<dyn std::error::Error>> {
 
-        let mut texts = Vec::new();
         let mut contents = Vec::new();
 
         for file_path in file_paths.iter() {
-            let path_str = match file_path.to_str() {
-                Some(s) => s,
-                None => { return Err(format!("Error converting path <{}> to &str", file_path.display()).into()) }
-            };
             let content = match file_path.extension().and_then(|ext| ext.to_str())  {
                 Some("pdf") => crate::common::pdf
                     ::extract_pdf_text(&file_path)?,
                 _ => fs::read_to_string(&file_path)
                     .map_err(|_| format!("Failed to read file {}", file_path.display()))?
             };
-            let text_data = format!("{{\"file_path\": \"{}\", \"content\": \"{}\"}}", path_str, content);
 
             contents.push(content.clone());
-            texts.push(text_data);
         }
-
-        let texts: Vec<&str> = texts.iter().map(|s| s.as_str()).collect();
-        let contents: Vec<&str> = contents.iter().map(|s| s.as_str()).collect();
-        let file_paths: Vec<&str> = file_paths.iter()
-            .map(|p| p.to_str().unwrap_or(""))
+        
+        let mut file_paths: Vec<String> = file_paths.iter()
+            .map(|p| p.to_string_lossy().into())
             .collect();
 
+        chunking::chunk_files_configured(&mut contents, &mut file_paths);
+
+        let texts: Vec<String> = contents.iter().enumerate()
+            .map(|(i, content)| format!("{{\"file_path\": \"{}\", \"content\": \"{}\"}}", file_paths[i], content))
+            .collect();
+        let texts: Vec<&str> = texts.iter().map(|s| s.as_str()).collect();
+
         let embeddings = self.embedding_client.get_embeddings(texts, "document").await?;
+        let contents: Vec<&str> = contents.iter().map(|s| s.as_str()).collect();
+        let file_paths: Vec<&str> = file_paths.iter().map(|s| s.as_str()).collect();
 
         // (make a new collection if it doesnt exist)
         if !self.vdb_client.list_collections().await?.contains(&collection_name.to_string()) {
