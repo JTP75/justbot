@@ -274,26 +274,10 @@ impl PuetceApp {
         Ok(result)
     }
 
-    /// Store a file to locally hosted vector database
+    /// Store one or more files to locally hosted vector database
     /// 
     /// - collection_name must match the name of a valid collection
-    /// - path must resolve to the location of a file
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// bot.store_file("512_test_collection", "path/to/some/file.md")
-    /// ```
-    pub fn store_file(&self, collection_name: &str, path: &Path) -> Result<(),Box<dyn std::error::Error>> {
-        tokio::runtime::Runtime::new()?
-            .block_on(self.client_mgr.embed_file(collection_name, path))?;
-        Ok(())
-    }
-
-    /// Store multiple files to locally hosted vector database
-    /// 
-    /// - collection_name must match the name of a valid collection
-    /// - paths is a slice of Path references
+    /// - paths is a vec of Path references
     /// 
     /// # Examples
     /// 
@@ -669,39 +653,6 @@ impl ClientManager {
     // }
 
     // routines
-    
-    /// Gets the embedding for a file and stores to the Vector DB
-    /// 
-    /// - assumes `file_path` is valid
-    /// - attempts to convert pdfs to text
-    pub async fn embed_file(&self, collection_name: &str, file_path: &Path) 
-    -> Result<(), Box<dyn std::error::Error>> {
-        let path_str = match file_path.to_str() {
-            Some(s) => s,
-            None => { return Err(format!("Error converting path <{}> to &str", file_path.display()).into()) }
-        };
-        let content = match file_path.extension().and_then(|ext| ext.to_str())  {
-            Some("pdf") => crate::common::pdf
-                ::extract_pdf_text(&file_path)?,
-            _ => fs::read_to_string(&file_path)
-                .map_err(|_| format!("Failed to read file {}", file_path.display()))?
-        };
-
-        // embed content and path
-        //      fixme theres a better way to group embeddings...
-        let text_data = format!("{{\"file_path\": \"{}\", \"content\": \"{}\"}}", path_str, content);
-        let embedding = self.embedding_client.get_embeddings(vec![&text_data], "document").await?
-            .first().ok_or("embedding respone empty")?.clone();
-
-        // store content to vdb
-        // (make a new collection if it doesnt exist)
-        if !self.vdb_client.list_collections().await?.contains(&collection_name.to_string()) {
-            self.vdb_client.add_collection(collection_name).await?;
-        }
-        self.vdb_client.insert_to_collection(collection_name, embedding, path_str, &content).await?;
-
-        Ok(())
-    }
 
     /// Gets the embedding for multiple files and stores to the Vector DB
     /// 
@@ -742,7 +693,7 @@ impl ClientManager {
         if !self.vdb_client.list_collections().await?.contains(&collection_name.to_string()) {
             self.vdb_client.add_collection(collection_name).await?;
         }
-        self.vdb_client.insert_multiple_to_collection(
+        self.vdb_client.insert_to_collection(
             collection_name, 
             embeddings, 
             file_paths, 
@@ -803,7 +754,7 @@ mod tests {
 
         // let _result = bot._get_vdb_client().add_collection(coll_name).await;
 
-        let result = bot.client_mgr.embed_file(coll_name, &path).await;
+        let result = bot.client_mgr.embed_files(coll_name, vec![&path]).await;
         assert!(result.is_ok(), "{}", result.unwrap_err())
     }
 }

@@ -60,7 +60,7 @@ impl Command for StoreCommand {
             log::info!("This is a file. {:?}", path);
 
             // store file
-            bot.store_file(&collection_name, &path)?;
+            bot.store_files(&collection_name, vec![&path])?;
 
             Ok(Some(format!(
                 "Successfully stored file to collection: {}.\n\t{}", 
