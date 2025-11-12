@@ -6,7 +6,10 @@ pub struct RagTool;
 
 impl Tool for RagTool {
     fn name(&self) -> &str { "custom-rag-text" }
-    fn description(&self) -> &str { "This is a RAG tool that retrieves text documents from a vector database using semantic search. It returns text data and a score for each retrieved document." }
+    fn description(&self) -> &str { r#"This is a RAG tool that retrieves text documents from a vector database using 
+    semantic search. It returns text data and a score for each retrieved document. Many of the documents retrieved will
+    have associated file paths. Some files will be chunked, as indicated by a '#number' suffix at the end of the path. 
+    The number indicates the chunk number of the retrieved item"# }
     fn input_schema(&self) -> ToolInputSchema { 
         ToolInputSchemaBuilder::default()
             .property("query", "string", "The query for searching the vector database")
