@@ -378,6 +378,7 @@ impl PuetceApp {
             let mut content: Vec<ContentBlock> = vec![];
             for (id, name, input) in tool_uses.iter() {
                 log::debug!("Executing tool '{name}': {input}");
+                println!("\x1b[1;34m>>\x1b[0m Executing tool: '{name}'");
 
                 let mut tool_mgr_tmp = std::mem::replace(&mut self.tool_mgr, ToolManager::new());
 
