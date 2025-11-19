@@ -44,5 +44,5 @@ async fn qdrant_handler() -> impl IntoResponse {
 async fn shutdown_signal() {
     signal::ctrl_c().await
         .expect("failed to install CTRL+C signal handler");
-    log::info!("\nShutdown signal received");
+    log::info!("Shutdown signal received");
 }

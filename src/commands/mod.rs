@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use once_cell::sync::Lazy;
 
-use crate::app::{bot::PuetceApp, session::SessionManager};
+use crate::app::{puetce::PuetceApp, session::SessionManager};
 
 pub trait Command {
     /// Returns the formal name of the command

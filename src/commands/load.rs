@@ -1,4 +1,4 @@
-use crate::app::{bot::PuetceApp, session::SessionManager};
+use crate::app::{puetce::PuetceApp, session::SessionManager};
 use crate::connection::anthropic_client::{ContentBlock, Role};
 
 use super::{Command, REGISTRY};

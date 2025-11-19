@@ -1,6 +1,6 @@
 
 /// Core chatbot logic
-pub mod bot;
+pub mod puetce;
 
 /// Session management
 pub mod session;

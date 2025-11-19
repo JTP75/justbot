@@ -15,7 +15,7 @@ use std::{sync::{Arc, atomic::{AtomicBool, Ordering}}, thread};
 
 use rustyline::{self,error::ReadlineError};
 
-use crate::{app::{bot::PuetceApp, session::SessionManager}};
+use crate::{app::{puetce::PuetceApp, session::SessionManager}};
 
 fn main() {
 

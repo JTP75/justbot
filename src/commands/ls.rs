@@ -1,6 +1,6 @@
 use std::fs;
 
-use crate::app::{bot::PuetceApp, session::SessionManager};
+use crate::app::{puetce::PuetceApp, session::SessionManager};
 
 use super::{Command, REGISTRY};
 

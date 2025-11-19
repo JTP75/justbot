@@ -2,7 +2,7 @@ use std::{ffi::OsStr, fs, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{common::config, app::bot::PuetceApp};
+use crate::{common::config, app::puetce::PuetceApp};
 use crate::connection::anthropic_client::{Message, ContentBlock, Role};
 
 /// Serializable struct that can be saved to a json file

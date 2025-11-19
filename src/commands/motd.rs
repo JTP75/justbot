@@ -1,6 +1,6 @@
 use chrono::Local;
 
-use crate::{connection::anthropic_client::{ContentBlock, Message, Role}, app::{bot::PuetceApp, session::SessionManager}};
+use crate::{connection::anthropic_client::{ContentBlock, Message, Role}, app::{puetce::PuetceApp, session::SessionManager}};
 
 use super::{Command, REGISTRY};
 

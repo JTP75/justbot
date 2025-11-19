@@ -2,7 +2,7 @@ use std::fs;
 
 use chrono::Local;
 
-use crate::{common::config, app::bot::PuetceApp, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
+use crate::{common::config, app::puetce::PuetceApp, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
 
 use super::{Tool, REGISTRY};
 
