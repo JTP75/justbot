@@ -1,11 +1,11 @@
 //! Integrates MCP Tools and Integrated Tools
 
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Mutex};
 
-use crate::{connection::anthropic_client::AnthropicToolDefinition, mcp::{McpContent, McpTool, client::McpClient}, app::puetce::PuetceApp, tools::{self, Tool}};
+use crate::{app::connection_manager::ConnectionManager, connection::anthropic_client::AnthropicToolDefinition, mcp::{McpContent, McpTool, client::McpClient}, tools::{self, Tool}};
 
 pub struct ToolManager {
-    mcp_clients: HashMap<String, McpClient>,
+    mcp_clients: HashMap<String, Mutex<McpClient>>,
     mcp_tools: Vec<McpTool>,
     integrated_tools: Vec<Box<dyn Tool>>,
     tool_client_map: HashMap<String, String>
@@ -43,14 +43,15 @@ impl ToolManager {
         for mcp_tool in mcp_tools.iter() {
             self.tool_client_map.insert(mcp_tool.name.clone(), name.clone());
         }
-        self.mcp_clients.insert(name, mcp_client);
+        self.mcp_clients.insert(name, Mutex::new(mcp_client));
         self.mcp_tools.extend(mcp_tools);
 
         Ok(())
     }
 
     pub fn kill_mcp_servers(&mut self) -> () {
-        for (name,client) in self.mcp_clients.iter_mut() {
+        for (name,client_mutex) in self.mcp_clients.iter() {
+            let mut client = client_mutex.lock().unwrap();
             if let Err(e) = client.kill() {
                 log::error!("Failed to kill process for '{}': {}", name, e);
                 eprintln!("Failed to kill process for '{}': {}", name, e);
@@ -81,28 +82,43 @@ impl ToolManager {
     /// 
     /// - this only supports tools that return text for now
     /// - this will prioritize integrated tools if there are conflicting names
-    pub fn execute_tool(&mut self, bot: &mut PuetceApp, tool_name: &str, args: &serde_json::Value) 
+    pub fn execute_tool(&self, cm: &ConnectionManager, tool_name: &str, args: &serde_json::Value) 
     -> Result<Option<String>, Box<dyn std::error::Error>> {
         if self.get_integrated_tooldefs().iter().any(|it| it.name==tool_name) {
             log::info!("Executing integrated tool '{}'", tool_name);
-            Ok(self.execute_integrated_tool(bot, tool_name, args)
-                .map_err(|e| format!("Execution failed: {e}"))?)
+            let result = self.execute_integrated_tool(cm, tool_name, args)
+                .map_err(|e| format!("Execution failed: {e}"));
+            match result { 
+                Ok(rslt) => Ok(rslt),
+                Err(e) => {
+                    log::error!("{}", e);
+                    Err(e.into())
+                }
+            }
         } else if self.get_mcp_tooldefs().iter().any(|mt| mt.name==tool_name) {
             log::info!("Executing MCP tool '{}' ", tool_name);
-            Ok(self.execute_mcp_tool(bot, tool_name, args)
-                .map_err(|e| format!("Execution failed: {e}"))?)
+            let result = self.execute_mcp_tool(tool_name, args)
+                .map_err(|e| format!("Execution failed: {e}"));
+            match result { 
+                Ok(rslt) => Ok(rslt),
+                Err(e) => {
+                    log::error!("{}", e);
+                    Err(e.into())
+                }
+            }
         } else {
             log::error!("Tool '{}' not found in mcp or integrated tooldefs", tool_name);
             Err("Tool not found in tooldefs".into())
         }
     }
 
-    pub fn execute_mcp_tool(&mut self, _bot: &mut PuetceApp, t_name: &str, args: &serde_json::Value) 
+    pub fn execute_mcp_tool(&self, t_name: &str, args: &serde_json::Value) 
     -> Result<Option<String>, Box<dyn std::error::Error>> {
         let c_name = self.tool_client_map.get(t_name)
             .ok_or(format!("No registered client for tool '{t_name}'"))?;
-        let client = self.mcp_clients.get_mut(c_name)
+        let client_mutex = self.mcp_clients.get(c_name)
             .ok_or(format!("No valid client with name '{c_name}'"))?;
+        let mut client = client_mutex.lock().expect("Failed to acquire mutex");
         
         let tool_rslt = client.call_tool(t_name, args)?;
         let text = tool_rslt.content.iter()
@@ -115,10 +131,10 @@ impl ToolManager {
         Ok(Some(text))
     }
 
-    pub fn execute_integrated_tool(&mut self, bot: &mut PuetceApp, t_name: &str, args: &serde_json::Value)
+    pub fn execute_integrated_tool(&self, cm: &ConnectionManager, t_name: &str, args: &serde_json::Value)
     -> Result<Option<String>, Box<dyn std::error::Error>> {
         let tool = self.integrated_tools.iter().find(|it| it.name()==t_name)
             .ok_or(format!("No registered tool with name '{t_name}'"))?;
-        tool.exec(bot,args)
+        tool.exec(cm, args)
     }
 }

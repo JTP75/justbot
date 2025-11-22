@@ -212,20 +212,6 @@ impl AnthropicClient {
         })
     }
 
-    /// Estimates the token count for a given messages vec
-    /// 
-    /// Rough estimate: 1 token ~= 4 characters
-    #[allow(unused)]
-    pub fn estimate_token_count_text(&self, messages: &Vec<Message>) -> usize {
-        messages.iter()
-            .map(|m| m.content.iter()
-                .map(|c| match c {
-                    ContentBlock::Text { text } => text.len()/4,
-                    _ => 0,
-                }).sum::<usize>()
-            ).sum()
-    }
-
     /// Sends a list of messages, system prompt, and randomness (temperature) to the LLM and returns the response
     pub async fn call_model(
         &self, 

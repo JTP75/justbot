@@ -2,7 +2,7 @@ use std::fs;
 
 use chrono::Local;
 
-use crate::{common::config, app::puetce::PuetceApp, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
+use crate::{app::{connection_manager::ConnectionManager, http::APP_STATE}, common::config, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
 
 use super::{Tool, REGISTRY};
 
@@ -18,10 +18,11 @@ impl Tool for GetMotdTool {
             .build()
             .unwrap()
     }
-    fn exec(&self, bot: &mut PuetceApp, _args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>> {
-        if let (date, Some(message)) = bot.get_motd() {
-            if date == Local::now().date_naive() {
-                Ok(Some(message))
+    fn exec(&self, _cm: &ConnectionManager, _args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>> {
+        let state = APP_STATE.lock().unwrap();
+        if let (date, Some(message)) = &state.motd {
+            if date == &Local::now().date_naive() {
+                Ok(Some(message.to_string()))
             } else {
                 Ok(None)
             }
@@ -40,13 +41,14 @@ impl Tool for SetMotdTool {
             .build()
             .expect("Tool schema builder failed")
     }
-    fn exec(&self, bot: &mut PuetceApp, args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, _cm: &ConnectionManager, args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let new_motd = args.get("new_motd").ok_or("Arguments are missing a paramater 'new_motd'")?
             .as_str().ok_or("Unexpected argument type for parameter 'new_motd'")?;
+        
+        let new_motd = (Local::now().date_naive(), Some(new_motd.to_string()));
+        let json = serde_json::to_string_pretty(&new_motd)?;
+        APP_STATE.lock().unwrap().motd = new_motd;
 
-        bot.set_motd((Local::now().date_naive(), Some(new_motd.into())));
-
-        let json = serde_json::to_string_pretty(&bot.get_motd())?;
         let filename: String = crate::common::config
             ::get_config("bot_config.json","motd_filename")?;
 

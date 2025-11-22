@@ -54,20 +54,8 @@ impl QdrantClient {
             ..Default::default()
         };
 
-        // 5 retries
-        for attempt in 1..6 {
-            let response = self.client.create_collection(req.clone()).await;
-            if let Ok(_response) = response {
-                return Ok(());
-            } else {
-                log::warn!(
-                    "Qdrant request failed (attempt {}/5): {}", 
-                    attempt, 
-                    response.unwrap_err()
-                );
-            }
-        }
-        Err("All create collection attempts failed.".into())
+        let _ = self.client.create_collection(req.clone()).await;
+        Ok(())
     }
 
     /// List all available collections in the Vector DB

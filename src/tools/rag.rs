@@ -1,4 +1,4 @@
-use crate::{app::puetce::PuetceApp, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
+use crate::{app::{connection_manager::ConnectionManager, http::APP_STATE}, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
 
 use super::{Tool, REGISTRY};
 
@@ -14,17 +14,27 @@ impl Tool for RagTool {
             .build()
             .expect("Tool schema builder failed")
     }
-    fn exec(&self, bot: &mut PuetceApp, args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, cm: &ConnectionManager, args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>> {
         let query = args.get("query").ok_or("Arguments are missing a paramater 'query'")?
             .as_str().ok_or("Unexpected argument type for parameter 'query'")?;
         let count = args.get("number_of_documents").ok_or("Arguments are missing a paramater 'number_of_documents'")?
             .as_u64().ok_or("Unexpected argument type for parameter 'number_of_documents'")?;
 
         let default_collection = crate::common::config
-            ::get_config("bot_config.json", "default_collection")?;
-        let results = bot.retrieve_from_vdb(&bot.get_current_collection().unwrap_or(default_collection), query, Some(count))?;
+            ::get_config::<String>("bot_config.json", "default_collection")?;
+        let as_cname = &APP_STATE.lock().unwrap().collection_name;
+        let collection_name = if let Some(collection_name) = as_cname { 
+            collection_name.as_str()
+        } else { 
+            default_collection.as_str()
+        };
 
-        Ok(Some(results))
+        let json_results = tokio::task::block_in_place(|| {
+            tokio::runtime::Runtime::new()?
+                .block_on(cm.query_vdb(collection_name, query, Some(count)))
+        })?;
+
+        Ok(Some(serde_json::to_string_pretty(&json_results)?))
     }
 }
 

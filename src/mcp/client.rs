@@ -103,11 +103,7 @@ impl McpClient {
             "method": "initialize",
             "params": {
                 "protocolVersion": "2024-11-05",
-                "capabilities": {
-                    "roots": {
-                        "listChanged": true
-                    }
-                },
+                "capabilities": {},
                 "clientInfo": {
                     "name": "puetce",
                     "version": "0.2.0"
@@ -156,20 +152,20 @@ impl McpClient {
         
         let mut line = String::new();
 
-        let rt = tokio::runtime::Runtime::new()?;
-        rt.block_on(async {
-            let timeout_duration = Duration::from_secs(10);
+        // let rt = tokio::runtime::Runtime::new()?;
+        // rt.block_on(async {
+        //     let timeout_duration = Duration::from_secs(10);
             
-            match tokio::time::timeout(timeout_duration, async {
-                self.reader.read_line(&mut line)
-            }).await {
-                Ok(Ok(_)) => Ok(()),
-                Ok(Err(e)) => Err(Box::new(e) as Box<dyn std::error::Error>),
-                Err(_) => Err("Read timeout after 10 seconds".into()),
-            }
-        })?; // this should make the stdin reader time out, but it hangs...
+        //     match tokio::time::timeout(timeout_duration, async {
+        //         self.reader.read_line(&mut line)
+        //     }).await {
+        //         Ok(Ok(_)) => Ok(()),
+        //         Ok(Err(e)) => Err(Box::new(e) as Box<dyn std::error::Error>),
+        //         Err(_) => Err("Read timeout after 10 seconds".into()),
+        //     }
+        // })?; // this should make the stdin reader time out, but it hangs...
 
-        // self.reader.read_line(&mut line)?;
+        self.reader.read_line(&mut line)?;
 
         match serde_json::from_str(&line) {
             Ok(response) => Ok(response),

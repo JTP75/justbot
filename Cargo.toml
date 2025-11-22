@@ -25,14 +25,18 @@ tokio = { version = "1.47.1", features = ["full"] }
 tower = "0.5.2"
 yup-oauth2 = "12.1.0"
 
+[lib]
+name = "puetce"
+path = "src/lib.rs"
+
 [[bin]]
 name = "setup"
 path = "bin/setup.rs"
 
 [[bin]]
 name = "puetce-server"
-path = "src/backend.rs"
+path = "bin/backend.rs"
 
 [[bin]]
 name = "puetce-client"
-path = "src/frontend.rs"
+path = "bin/frontend.rs"

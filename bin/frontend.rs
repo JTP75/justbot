@@ -1,15 +1,4 @@
-//! Main entry point for rustbot application
-//! 
-//! - Handles the main CLI loop
-//! - Delegates command handling to RustBot and SessionManager
-//! - Uses rustyline for CLI input with history support
-
-mod common;
-mod commands;
-mod app;
-mod connection;
-mod mcp;
-mod tools;
+use puetce::*;
 
 use std::{sync::{Arc, atomic::{AtomicBool, Ordering}}, thread};
 
@@ -22,19 +11,22 @@ fn main() {
     // setup env logger
     let _ = env_logger::builder().try_init();
 
-    println!("\x1b[1;34m>>\x1b[0m Starting up...");
+    log::info!("Starting up...");
 
     // init bot and session mgr
-    println!("\x1b[1;34m>>\x1b[0m Initializing bot and session... ");
     let mut bot = PuetceApp::new(crate::common::config
         ::get_config::<String>("bot_config.rs", "default_name")
         .unwrap_or("rustbot".into()));
     let mut sm = SessionManager::new();
-    if let Err(e) = bot.startup() {
-        log::error!("Startup failed: {e}");
+    
+    if !bot.http_client.is_healthy() {
+        log::error!("Backend server health check failed (probably not running)");
+        drop(bot);
         return;
     }
-    println!("\x1b[1;34m>>\x1b[0m Bot and session initialized!");
+
+    log::info!("Connected to backend at {}", bot.http_client.addr());
+    log::info!("Session initialized");
 
     print_big_banner_puetce();
     
@@ -118,11 +110,6 @@ fn main() {
         log::warn!("Failed to save rustyline history: {e}");
     }
     drop(rl);
-
-    // call shutdown checks
-    if let Err(e) = bot.shutdown() {
-        log::error!("\x1b[1;31mShutdown failed.\x1b[0m {e}");
-    }
 
     // drop bot
     drop(bot);

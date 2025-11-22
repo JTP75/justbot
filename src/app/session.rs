@@ -112,12 +112,12 @@ impl SessionManager {
         Ok(fs::write(&self.data_dir.join(filename), json)?)
     }
 
-    pub fn load_motd(&self, bot: &mut PuetceApp) -> Result<(),Box<dyn std::error::Error>> {
+    pub fn load_motd(&self, _bot: &mut PuetceApp) -> Result<(),Box<dyn std::error::Error>> {
         let filename: String = crate::common::config
             ::get_config("bot_config.json","motd_filename")?;
         let json = fs::read_to_string(&self.data_dir.join(filename))?;
-        let motd: (chrono::NaiveDate, Option<String>) = serde_json::from_str(&json)?;
-        Ok(bot.set_motd(motd))
+        let _motd: (chrono::NaiveDate, Option<String>) = serde_json::from_str(&json)?;
+        Ok(())
     }
 
     fn save_session_as_json(&mut self, path: PathBuf, bot: &PuetceApp) -> Result<(),Box<dyn std::error::Error>> {        

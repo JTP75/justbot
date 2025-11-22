@@ -1,7 +1,10 @@
+#![allow(deprecated)]
+
 use crate::{connection::anthropic_client::{ContentBlock, Message, Role}, app::{puetce::PuetceApp, session::SessionManager}};
 
 use super::{Command, REGISTRY};
 
+#[deprecated]
 pub struct MessageRagCommand;
 
 impl Command for MessageRagCommand {

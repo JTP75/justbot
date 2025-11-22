@@ -5,9 +5,9 @@ use derive_builder::Builder;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-use crate::{connection::anthropic_client::AnthropicToolDefinition, app::puetce::PuetceApp};
+use crate::{app::connection_manager::ConnectionManager, connection::anthropic_client::AnthropicToolDefinition};
 
-pub trait Tool {
+pub trait Tool: Sync + Send {
     // templates
 
     /// Returns the formal name of the tool
@@ -22,7 +22,7 @@ pub trait Tool {
     /// Executes the tool
     /// 
     /// Returns response wrapped in a Result and Option
-    fn exec(&self, bot: &mut PuetceApp, args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>>;
+    fn exec(&self, cm: &ConnectionManager, args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>>;
 
     // impls
 

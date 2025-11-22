@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 #[async_trait::async_trait]
-pub trait EmbeddingClient: Debug {
+pub trait EmbeddingClient: Debug + Sync + Send {
     /// Get the embedding for input text
     /// 
     /// - `input_text` can be either "document" or "query"
