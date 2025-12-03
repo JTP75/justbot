@@ -67,6 +67,7 @@ pub mod motd;
 pub mod store;
 pub mod get_collection;
 pub mod set_collection;
+pub mod list_collection;
 pub mod get_tools;
 
 // navigation
