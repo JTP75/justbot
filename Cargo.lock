@@ -1563,6 +1563,7 @@ dependencies = [
  "directories",
  "dotenvy",
  "env_logger",
+ "fd-lock",
  "log",
  "once_cell",
  "qdrant-client",

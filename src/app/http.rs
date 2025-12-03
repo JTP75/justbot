@@ -1,6 +1,6 @@
 use std::{fs, path::{Path, PathBuf}, sync::{Arc, Mutex}};
 
-use axum::{Router, extract, response::IntoResponse, routing, http::status::StatusCode};
+use axum::{Router, extract, routing, http::status::StatusCode};
 use chrono::Local;
 use once_cell::sync::Lazy;
 use reqwest::Client;
@@ -319,6 +319,39 @@ impl HttpEndpoint for SetCollectionEndpoint {
     }
 }
 
+// ======== health
+pub struct HealthEndpoint;
+#[async_trait::async_trait]
+impl HttpEndpoint for HealthEndpoint {
+    fn name(&self) -> &str { "health" }
+    async fn handle(&self, _cm: &Arc<ConnectionManager>, tm: &Arc<ToolManager>, input: Value) 
+    -> Result<Value, Box<dyn std::error::Error>> {
+        log::debug!("Handling health request: {:?}", input);
+
+        let mcp_tools = tm.get_mcp_tooldefs()
+            .iter()
+            .map(|td| td.name.clone())
+            .collect::<Vec<_>>()
+            .join("\t\n");
+
+        let anthropic_status = "todo";
+        let qdrant_status = "todo";
+        let embedding_service = "todo"; // "local" or "voyage"
+        let embedding_status = "todo";
+
+        // if cm.chat_client.
+        
+        log::info!("Health check called\nMCP Tools:\n\t{}\nAnthropic:\n\t{}\nQdrant:\n\t{}\nEmbedding Service ({}):\n\t{}", 
+            mcp_tools,
+            anthropic_status,
+            qdrant_status,
+            embedding_service, embedding_status
+        );
+
+        Ok(json!(null))
+    }
+}
+
 // http server
 
 pub struct HttpServer {
@@ -339,6 +372,9 @@ impl HttpServer {
             .expect("failed to retrieve config");
         
         let endpoints: Vec<Arc<dyn HttpEndpoint>> = vec![
+
+            // health
+            Arc::new(HealthEndpoint),
             
             // chat
             Arc::new(SendMessageEndpoint),
@@ -386,7 +422,7 @@ impl HttpServer {
         let state_routes = Router::new()
             .route("/set_collection", endpoint_route_put!(cm, tm, endpoints));
         let router = Router::new()
-            .route("/health", routing::get(health_check))
+            .route("/health", endpoint_route_get!(cm, tm, endpoints))
             .nest("/tools", tool_routes)
             .nest("/connect", connect_routes)
             .nest("/state", state_routes);
@@ -727,13 +763,6 @@ async fn shutdown_signal() {
     signal::ctrl_c().await
         .expect("failed to install CTRL+C signal handler");
     log::info!("Shutdown signal received");
-}
-
-// callbacks
-
-async fn health_check() -> impl IntoResponse { 
-    log::info!("Health check called");
-    (StatusCode::OK, "OK")
 }
 
 #[cfg(test)]

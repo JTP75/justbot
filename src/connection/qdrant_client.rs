@@ -38,6 +38,11 @@ impl QdrantClient {
         })
     }
 
+    pub async fn health(&self) -> Result<String, Box<dyn std::error::Error>> {
+        let _reply = self.client.health_check().await?;
+        unimplemented!()
+    }
+
     /// Create a new collection in the VectorDB
     pub async fn add_collection(&self, collection_name: &str) 
     -> Result<(), Box<dyn std::error::Error>> {

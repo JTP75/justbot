@@ -1,4 +1,5 @@
 use std::{fs, sync::Arc};
+use fd_lock::{RwLock, RwLockWriteGuard};
 
 use puetce::{
     app::{
@@ -8,14 +9,45 @@ use puetce::{
     mcp::McpConfig
 };
 
+// rw lock
+
+fn get_fd_lock() -> Result<RwLockWriteGuard<'static, fs::File>, Box<dyn std::error::Error>> {
+    let lock_path = config::PROJECT_DIRS.cache_dir().join(".backend.lock");
+
+    let file = fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .open(&lock_path)?;
+    // allocate the lock on the heap and leak it so the returned guard can live for 'static
+    let lock_box: &'static mut RwLock<fs::File> = Box::leak(Box::new(RwLock::new(file)));
+
+    match lock_box.try_write() {
+        Ok(guard) => Ok(guard),
+        Err(_) => Err("Lock already held".into())
+    }
+}
+
+// main
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    let _ = env_logger::builder().try_init();
+    let _ = env_logger::builder().filter_level(log::LevelFilter::Info).try_init();
 
     // STARTUP PROCEDURE
     // ============================================================================
     log::info!("Entering startup...");
+    log::info!("Acquiring lock...");
+
+    let guard = match get_fd_lock() {
+        Ok(guard) => guard,
+        Err(e) => {
+            log::error!("{}", e);
+            return Err(e);
+        }
+    };
+
+    log::info!("Lock acquired");
     log::info!("Initializing managers...");
 
     let conn_mgr = ConnectionManager::new();
@@ -98,6 +130,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     
     log::info!("Docker-compose services stopped.");
+    log::info!("Releasing lock...");
+
+    drop(guard);
+
+    log::info!("Lock released");
     log::info!("Shutdown complete");
 
     Ok(())
