@@ -164,6 +164,8 @@ pub struct SendMessageParams {
     sys_prompt: String,
     #[builder(default = false)]
     use_tools: bool,
+    #[builder(default = None)]
+    model: Option<String>,
     #[builder(default = 0.75f64)]
     randomness: f64
 }
@@ -176,7 +178,7 @@ impl HttpEndpoint for SendMessageEndpoint {
         log::debug!("Handling send_message request: {:?}", input);
         let args = serde_json::from_value::<SendMessageParams>(input)?;
         let tools = if args.use_tools { Some(&tm.get_tools_as_tooldefs()) } else { None };
-        let response = cm.chat_client.call_model(&args.messages, &args.sys_prompt, tools, args.randomness).await?;
+        let response = cm.chat_client.call_model(&args.messages, &args.sys_prompt, tools, args.model, args.randomness).await?;
         Ok(json!(response))
     }
 }
@@ -537,12 +539,13 @@ impl HttpClient {
 
     // specific callbacks (might want to handle this more extensibly...)
 
-    pub async fn send_message(&self, messages: &Vec<Message>, sys_prompt: &str, use_tools: bool, randomness: f64) 
+    pub async fn send_message(&self, messages: &Vec<Message>, sys_prompt: &str, use_tools: bool, model: Option<String>, randomness: f64) 
     -> Result<MessagesResponse,Box<dyn std::error::Error>> {
         let params = SendMessageParamsBuilder::default()
             .messages(messages.to_vec())
             .sys_prompt(sys_prompt.to_string())
             .use_tools(use_tools)
+            .model(model)
             .randomness(randomness)
             .build()?;
         let req = HttpRequestBuilder::default()
@@ -837,6 +840,7 @@ mod tests {
             }], 
             "This is a sys prompt yay", 
             false, 
+            None,
             0.75
         ).await.expect("request failed");
 

@@ -6,8 +6,15 @@ use once_cell::sync::Lazy;
 pub const QUALIFIER: &str = "com";
 pub const ORGANIZATION: &str = "puetceco";
 pub const APPLICATION: &str = "rustbot";
+pub const MODELS: &[&str] = &[
+    "claude-haiku-4-5-20251001",
+    "claude-sonnet-4-5-20250929",
+    "claude-opus-4-5-20251101",
+];
+
 pub static PROJECT_DIRS: Lazy<ProjectDirs> = 
     Lazy::new(|| ProjectDirs::from(QUALIFIER, ORGANIZATION, APPLICATION).unwrap());
+
 
 /// Retrieves config value given a filename and key
 /// 

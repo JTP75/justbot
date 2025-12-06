@@ -122,7 +122,7 @@ pub struct AnthropicClient {
     api_key: String,
     url: String,
     api_version: String,
-    model: String,
+    default_model: String,
     max_tokens: usize,
     pub usage_monitor: AnthropicUsageMonitor,
 }
@@ -204,7 +204,7 @@ impl AnthropicClient {
                 ::get_config("anthropic_config.json", "base_url")?,
             api_version: crate::common::config
                 ::get_config("anthropic_config.json", "anthropic_version")?,
-            model: crate::common::config
+            default_model: crate::common::config
                 ::get_config("anthropic_config.json", "default_model")?,
             max_tokens: crate::common::config
                 ::get_config("anthropic_config.json", "max_tokens")?,
@@ -218,9 +218,15 @@ impl AnthropicClient {
         messages: &Vec<Message>, 
         sys_prompt: &str, 
         tools: Option<&Vec<AnthropicToolDefinition>>, 
+        model: Option<String>,
         randomness: f64
     ) 
     -> Result<MessagesResponse,Box<dyn std::error::Error>> {
+
+        let m = match model {
+            Some(model) => model,
+            None => self.default_model.clone()
+        };
 
         let sp = if !sys_prompt.is_empty() { 
             build_ephemeral_sys_prompt(sys_prompt) 
@@ -235,7 +241,7 @@ impl AnthropicClient {
         };
 
         let request_json = serde_json::json!({
-            "model": &self.model, 
+            "model": &m, 
             "max_tokens": self.max_tokens, 
             "temperature": randomness,
             "messages": &messages[..],
@@ -321,6 +327,7 @@ mod tests {
                 }; 8
             ], 
             "This is the sys prompt", 
+            None, 
             None, 
             0.0
         ).await

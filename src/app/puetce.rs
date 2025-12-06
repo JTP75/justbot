@@ -18,6 +18,7 @@ pub struct PuetceApp {
 
     // state
     topic: String,
+    model: String,
     messages: Vec<Message>,
     cwd: PathBuf,
     collection: Option<String>
@@ -43,6 +44,9 @@ impl PuetceApp {
             http_client: HttpClient::new(),
             
             topic: "".into(),
+            model: crate::common::config
+                ::get_config("anthropic_config.json", "default_model")
+                .expect("failed to retrieve from config"),
             messages: vec![],
             cwd: env::current_dir().unwrap_or(PathBuf::new()),
             collection: None
@@ -146,6 +150,11 @@ impl PuetceApp {
         self.http_client.list_tools().expect("Failed to retrieve tools")
     }
 
+    /// todo
+    pub fn get_model(&self) -> String {
+        self.model.clone()
+    }
+
     /// Add a named collection to the vector database
     /// 
     /// - will error if collection already exists, but this can be ignored
@@ -208,7 +217,7 @@ impl PuetceApp {
     pub fn query_llm(&self, messages: &Vec<Message>, sys_prompt: &str, randomness: f64) 
     -> Result<MessagesResponse,Box<dyn std::error::Error>> {
         tokio::runtime::Runtime::new()?
-            .block_on(self.http_client.send_message(messages, sys_prompt, false, randomness))
+            .block_on(self.http_client.send_message(messages, sys_prompt, false, Some(self.model.clone()), randomness))
     }
 
     /// Sends a list of messages to claude and awaits a response (blocking)
@@ -237,7 +246,7 @@ impl PuetceApp {
         for _i in 0..10 {
             // get ai response
             let response = rt.block_on(self.http_client
-                .send_message(&messages_copy, sys_prompt, true, randomness))?;
+                .send_message(&messages_copy, sys_prompt, true, Some(self.model.clone()), randomness))?;
 
             let tpm = self.http_client.get_tpm()?;
             if tpm.0 > (17 * max_tpm.0 / 20) { log::warn!("Input token rate limit:  {:5} / {:5}", tpm.0, max_tpm.0) }
@@ -363,6 +372,11 @@ impl PuetceApp {
 
     /// Set the currently selected VectorDB collection
     pub fn set_current_collection(&mut self, collection: Option<String>) -> () { self.collection = collection }
+
+    /// todo
+    pub fn set_model(&mut self, model: impl Into<String>) -> () {
+        self.model = model.into()
+    }
 
     /// Push a `anthropic::types::Message` to the end of the messages Vec
     pub fn push_message(&mut self, message: Message) -> () { self.messages.push(message) }
