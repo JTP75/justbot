@@ -144,7 +144,7 @@ impl ConnectionManager {
         Ok(serde_json::json!(
             search_result.iter().map(|sp| {
                 serde_json::json!({
-                    "file_name": sp.payload
+                    "file_path": sp.payload
                         .get("file_path"),
                     "content": sp.payload
                         .get("content"),
