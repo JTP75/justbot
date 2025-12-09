@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, sync::{Arc, Mutex}, time::{Duration, Instant}};
+use std::{collections::{HashMap, VecDeque}, sync::{Arc, Mutex}, time::{Duration, Instant}};
 
 use dotenvy;
 
@@ -174,6 +174,7 @@ impl AnthropicUsageMonitor {
         (input_tokens, output_tokens)
     }
 
+    #[allow(unused)]
     pub fn tpm_str(&self) -> String {
         let tpm = self.tpm();
         let max_tpm = self.max_tpm();
@@ -271,8 +272,44 @@ impl AnthropicClient {
 
             let usage: AnthropicUsage = serde_json::from_value(usage_json)?;
             let response = serde_json::from_value(response_json)?;
-            self.usage_monitor.record(usage.into());
-            log::info!("{}", self.usage_monitor.tpm_str());
+            self.usage_monitor.record(usage.clone().into());
+
+            // tpm logger message
+            let (tpm_in,tpm_out) = self.usage_monitor.tpm();
+            let (mtpm_in,mtpm_out) = self.usage_monitor.max_tpm();
+
+            let price_map = HashMap::from([
+                ("claude-haiku-4-5-20251001".to_string(),   (1.0f32,  5.0f32)),
+                ("claude-sonnet-4-5-20250929".to_string(),  (3.0f32, 15.0f32)),
+                ("claude-opus-4-5-20251101".to_string(),    (5.0f32, 25.0f32)),
+            ]);
+
+            let (ppmt_in, ppmt_out) = price_map.get(&m)
+                .expect("invalid model (not in price map, this should be unreachable)");
+
+            let p_in = (usage.input_tokens as f32) * ppmt_in / 1_000_000f32;
+            let p_out = (usage.output_tokens as f32) * ppmt_out / 1_000_000f32;
+            log::info!(r#"Usage (for model {}):
+input tokens:   {:9} tokens => ${:.6}
+output tokens:  {:9} tokens => ${:.6}
+cost for this prompt: ${:.6}"#,
+                m, usage.input_tokens, p_in,
+                usage.output_tokens, p_out,
+                p_in+p_out,
+            );
+
+            let ppm_in = (tpm_in as f32) * ppmt_in / 1_000_000f32;
+            let ppm_out = (tpm_out as f32) * ppmt_out / 1_000_000f32;
+            log::info!(r#"Usage per minute (for model {}):
+tokens per minute in:     {:6} / {:6} ({:.2}%) => ${:.6} / min
+tokens per minute out:    {:6} / {:6} ({:.2}%) => ${:.6} / min
+cost for the past minute: ${:.6}"#,
+                m, tpm_in, mtpm_in, (tpm_in as f32) / (mtpm_in as f32) * 100f32,
+                ppm_in,
+                tpm_out, mtpm_out, (tpm_out as f32) / (mtpm_out as f32) * 100f32,
+                ppm_out,
+                ppm_in+ppm_out,
+            );
 
             Ok(response)
         }
