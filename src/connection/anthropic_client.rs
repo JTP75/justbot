@@ -22,7 +22,7 @@ pub enum ContentBlock {
     Text { text: String },
     Image { source: String, media_type: String, data: String },
     ToolUse { id: String, name: String, input: serde_json::Value },
-    ToolResult { tool_use_id: String, content: Vec<ToolResultContentBlock> },
+    ToolResult { tool_use_id: String, content: Vec<ToolResultContentBlock>, is_error: bool },
 }
 
 #[derive(Copy, Clone, Serialize, Deserialize, Debug, PartialEq, Eq, Default)]
@@ -58,7 +58,16 @@ pub struct AnthropicToolDefinition {
 pub enum ToolResultContentBlock {
     Text { text: String },
     Image { source: String, media_type: String, data: String },
-    Document { source: String, media_type: String, data: String },
+    Document { source: Source, title: Option<String>, context: Option<String> },
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "snake_case", tag = "type")]
+pub enum Source {
+    Text {
+        media_type: String,
+        data: String,
+    },
 }
 
 // anthropic usage

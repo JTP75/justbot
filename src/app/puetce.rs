@@ -7,7 +7,7 @@ use crate::app::http::HttpClient;
 use crate::app::session::SessionManager;
 use crate::commands::{self, Command};
 use crate::common::config;
-use crate::connection::anthropic_client::{AnthropicToolDefinition, ContentBlock, Message, MessagesResponse, Role, ToolResultContentBlock};
+use crate::connection::anthropic_client::{AnthropicToolDefinition, ContentBlock, Message, MessagesResponse, Role, Source, ToolResultContentBlock};
 
 #[derive(Debug)]
 pub struct PuetceApp {
@@ -237,13 +237,15 @@ impl PuetceApp {
         let rt = tokio::runtime::Runtime::new()?;
         let mut messages_copy = messages.clone();
 
+        let consec_tool_limit = 25usize;
+
         if let Some(collection) = &self.collection {
             self.http_client.set_collection(collection)?; // THIS IS A BAD WORKAROUND
         }
 
         // only allow ten consecutive tool calls
         let max_tpm = self.http_client.get_max_tpm()?;
-        for _i in 0..10 {
+        for _ in 0..consec_tool_limit {
             // get ai response
             let response = rt.block_on(self.http_client
                 .send_message(&messages_copy, sys_prompt, true, Some(self.model.clone()), randomness))?;
@@ -272,40 +274,60 @@ impl PuetceApp {
 
             let mut content: Vec<ContentBlock> = vec![];
             for (id, name, input) in tool_uses.iter() {
-                log::debug!("Executing tool '{name}': {input}");
-                println!("\x1b[1;34m>>\x1b[0m Executing tool: '{name}'");
+                log::info!("Executing tool '{name}': {input}");
 
-                let output = match self.http_client.execute_tool(name, input) {
-                    Ok(Some(output)) => {
-                        log::debug!("Tool '{}' executed successfully.", name);
-                        if input_token_est + output.len()/4 > 190000 {
-                            log::warn!("Approaching conversation input token limit: {} / 200000", input_token_est);
-                            format!("Tool '{}' execution succeeded, but returned too many tokens (~{}). The current conversation is ~{} tokens and the upper limit is 190000 tokens.", 
-                                name, 
-                                output.len()/4,
-                                input_token_est
-                            )
-                        } else {
-                            output
+                // todo we probably dont want a print statement here
+                println!("\r\x1b[1;34m>>\x1b[0m Executing tool: '{name}'");
+
+                let tool_result_block = match self.http_client.execute_tool(name, input) {
+                    Ok(result_blocks) => {
+                        log::info!("Tool '{}' executed successfully.", name);
+                        let new_input_length: usize = result_blocks.iter()
+                            .map(|block| match block {
+                                ToolResultContentBlock::Text { text } => text.len(),
+                                ToolResultContentBlock::Document { source, title: _, context: _context } =>
+                                    match source {
+                                        Source::Text { media_type: _, data } => data.len(),
+                                    },
+                                ToolResultContentBlock::Image { source: _, media_type: _, data: _ } => 0,
+                            }).sum();
+
+                        ContentBlock::ToolResult { 
+                            tool_use_id: id.into(), 
+                            content: if result_blocks.is_empty() {
+                                // check if result blocks is empty
+                                vec![ToolResultContentBlock::Text { 
+                                    text: "Tool returned successfully with no content".into() 
+                                }]
+                            } else if input_token_est + 0 > 190_000 {
+                                // check if result blocks will push over the context window limit (200000 tokens)
+                                log::warn!("Approaching context window danger zone: {} / 200000", input_token_est);
+                                vec![ToolResultContentBlock::Text { 
+                                    text: format!("Tool '{}' {} (~{} tokens). The current context window is ~{} {}", 
+                                        name, "execution succeeded, but returned too many tokens", new_input_length/4, 
+                                        input_token_est, "tokens and the upper limit is 190000 tokens.",)
+                                }]
+                            } else {
+                                result_blocks
+                            }, 
+                            is_error: false
                         }
-                    },
-                    Ok(None) => {
-                        log::debug!("Tool '{}' executed successfully.", name);
-                        format!("Tool '{}' executed successfully with no return value.", name)
                     },
                     Err(e) => {
                         log::error!("Tool '{}' execution failed:\n{}", name, e);
-                        format!("Tool '{}' execution failed: {}", name, e)
-                    }
+                        ContentBlock::ToolResult {
+                            tool_use_id: id.into(), 
+                            content: vec![ToolResultContentBlock::Text { 
+                                text: format!("Tool exited with error: {}", e) 
+                            }], 
+                            is_error: true
+                        }
+                    },
                 };
 
-                content.push(ContentBlock::ToolResult { 
-                    tool_use_id: id.into(), 
-                    content: vec![
-                        ToolResultContentBlock::Text { text: output },
-                    ]
-                });
+                content.push(tool_result_block);
             }
+
             let tool_result_msg = Message {
                 role: Role::User,
                 content,
@@ -313,7 +335,9 @@ impl PuetceApp {
 
             messages_copy.push(tool_result_msg);
         }
-        Err("Too many ".into())
+
+        log::error!("Too many chained tool execution calls. The limit is {consec_tool_limit} requests per turn");
+        Err(format!("Too many chained tool execution calls. The limit is {consec_tool_limit} requests per turn").into())
     }
 
     /// todo

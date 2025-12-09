@@ -1,4 +1,4 @@
-use crate::{app::connection_manager::ConnectionManager, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
+use crate::{app::connection_manager::ConnectionManager, connection::anthropic_client::ToolResultContentBlock, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
 
 use super::{Tool, REGISTRY};
 
@@ -13,11 +13,19 @@ impl Tool for GetGreetingTool {
             .build()
             .expect("Tool schema builder failed")
     }
-    fn exec(&self, _cm: &ConnectionManager, args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, _cm: &ConnectionManager, args: &serde_json::Value) -> Result<Vec<ToolResultContentBlock>, Box<dyn std::error::Error>> {
         if let Some(name) = args.as_object().unwrap_or(&serde_json::Map::new()).get("name") {
-            Ok(Some(format!("Hello there! My name is {}.", name.as_str().unwrap())))
+            Ok(vec![
+                ToolResultContentBlock::Text {
+                    text: format!("Hello there! My name is {}.", name.as_str().unwrap()),
+                }
+            ])
         } else {
-            Ok(Some(format!("Hello there! This is a friendly greeting!")))
+            Ok(vec![
+                ToolResultContentBlock::Text {
+                    text: format!("Hello there! This is a friendly greeting!"),
+                }
+            ])
         }
     }
 }

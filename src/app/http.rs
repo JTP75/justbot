@@ -9,7 +9,10 @@ use serde_json::{Value, json};
 use tokio::{net::TcpListener, signal};
 use derive_builder::Builder;
 
-use crate::{app::{connection_manager::ConnectionManager, tool_manager::ToolManager}, common::config, connection::anthropic_client::{AnthropicToolDefinition, Message, MessagesResponse}};
+use crate::{
+    app::{connection_manager::ConnectionManager, tool_manager::ToolManager}, 
+    common::config, connection::anthropic_client::{AnthropicToolDefinition, Message, MessagesResponse, ToolResultContentBlock}
+};
 
 // lazy mutex for server state
 // ONLY ALLOW IDEMPOTENT MUT OPS!!! (i.e. no POST)
@@ -178,8 +181,15 @@ impl HttpEndpoint for SendMessageEndpoint {
         log::debug!("Handling send_message request: {:?}", input);
         let args = serde_json::from_value::<SendMessageParams>(input)?;
         let tools = if args.use_tools { Some(&tm.get_tools_as_tooldefs()) } else { None };
-        let response = cm.chat_client.call_model(&args.messages, &args.sys_prompt, tools, args.model, args.randomness).await?;
-        Ok(json!(response))
+        let response = cm.chat_client.call_model(
+            &args.messages, &args.sys_prompt, tools, args.model, args.randomness).await;
+        match response {
+            Ok(response) => Ok(json!(response)),
+            Err(e) => {
+                log::error!("Error in call_model call: {e}");
+                Err(e)
+            }
+        }
     }
 }
 
@@ -517,14 +527,17 @@ impl HttpClient {
             .header("content-type", "application/json")
             .json(&value)
             .send().await?;
-        if let Err(e) = response.error_for_status_ref() {
-            log::error!("Post request failed: {e}");
-            log::error!("Body: {value}");
-            Err(Box::new(e))
-        } else {
-            let response_body = response.json().await?;
-            Ok(response_body)
+
+        let status = response.status();
+        let response_body = response.json::<Value>().await?;
+        
+        if !status.is_success() {
+            log::error!("Post request failed with status: {status}");
+            log::error!("Response body: {}", serde_json::to_string_pretty(&response_body).unwrap());
+            return Err(format!("Request failed with status: {status}").into());
         }
+        
+        Ok(response_body)
     }
 
     pub fn is_healthy(&self) -> bool {
@@ -624,7 +637,7 @@ impl HttpClient {
     }
 
     pub fn execute_tool(&self, name: &str, input: &Value) 
-    -> Result<Option<String>, Box<dyn std::error::Error>> {
+    -> Result<Vec<ToolResultContentBlock>, Box<dyn std::error::Error>> {
         let params = ExecuteToolParamsBuilder::default()
             .name(name.to_owned())
             .input(input.to_owned())
@@ -644,7 +657,7 @@ impl HttpClient {
         if res.status=="error" {
             Err("there was an error".into())
         } else {
-            let response: Option<String> = serde_json::from_value(res.data)?;
+            let response: Vec<ToolResultContentBlock> = serde_json::from_value(res.data)?;
             Ok(response)
         }
     }

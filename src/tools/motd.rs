@@ -2,7 +2,7 @@ use std::fs;
 
 use chrono::Local;
 
-use crate::{app::{connection_manager::ConnectionManager, http::APP_STATE}, common::config, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
+use crate::{app::{connection_manager::ConnectionManager, http::APP_STATE}, common::config, connection::anthropic_client::ToolResultContentBlock, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
 
 use super::{Tool, REGISTRY};
 
@@ -18,16 +18,26 @@ impl Tool for GetMotdTool {
             .build()
             .unwrap()
     }
-    fn exec(&self, _cm: &ConnectionManager, _args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, _cm: &ConnectionManager, _args: &serde_json::Value) -> Result<Vec<ToolResultContentBlock>, Box<dyn std::error::Error>> {
         let state = APP_STATE.lock().unwrap();
-        if let (date, Some(message)) = &state.motd {
+        let motd = if let (date, Some(message)) = &state.motd {
             if date == &Local::now().date_naive() {
-                Ok(Some(message.to_string()))
+                Some(message.to_string())
             } else {
-                Ok(None)
+                None
             }
         } else {
-            Ok(None)
+            None
+        };
+
+        if let Some(motd_str) = motd {
+            Ok(vec![ToolResultContentBlock::Text {
+                text: motd_str,
+            }])
+        } else {
+            Ok(vec![ToolResultContentBlock::Text {
+                text: "The MOTD is currently unset or expired".into(),
+            }])
         }
     }
 }
@@ -41,7 +51,7 @@ impl Tool for SetMotdTool {
             .build()
             .expect("Tool schema builder failed")
     }
-    fn exec(&self, _cm: &ConnectionManager, args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, _cm: &ConnectionManager, args: &serde_json::Value) -> Result<Vec<ToolResultContentBlock>, Box<dyn std::error::Error>> {
         let new_motd = args.get("new_motd").ok_or("Arguments are missing a paramater 'new_motd'")?
             .as_str().ok_or("Unexpected argument type for parameter 'new_motd'")?;
         
@@ -54,7 +64,7 @@ impl Tool for SetMotdTool {
 
         fs::write(config::PROJECT_DIRS.data_dir().join(filename), json)?;
 
-        Ok(None)
+        Ok(vec![ToolResultContentBlock::Text { text: "This tool executed successfully".into() }])
     }
 }
 

@@ -5,7 +5,7 @@ use derive_builder::Builder;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-use crate::{app::connection_manager::ConnectionManager, connection::anthropic_client::AnthropicToolDefinition};
+use crate::{app::connection_manager::ConnectionManager, connection::anthropic_client::{AnthropicToolDefinition, ToolResultContentBlock}};
 
 pub trait Tool: Sync + Send {
     // templates
@@ -22,7 +22,7 @@ pub trait Tool: Sync + Send {
     /// Executes the tool
     /// 
     /// Returns response wrapped in a Result and Option
-    fn exec(&self, cm: &ConnectionManager, args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>>;
+    fn exec(&self, cm: &ConnectionManager, args: &serde_json::Value) -> Result<Vec<ToolResultContentBlock>, Box<dyn std::error::Error>>;
 
     // impls
 

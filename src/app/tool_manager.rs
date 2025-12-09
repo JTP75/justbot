@@ -2,7 +2,11 @@
 
 use std::{collections::HashMap, sync::Mutex};
 
-use crate::{app::connection_manager::ConnectionManager, connection::anthropic_client::AnthropicToolDefinition, mcp::{McpContent, McpTool, client::McpClient}, tools::{self, Tool}};
+use crate::{
+    app::connection_manager::ConnectionManager, 
+    connection::anthropic_client::{AnthropicToolDefinition, ToolResultContentBlock}, 
+    mcp::{McpContent, McpTool, client::McpClient}, tools::{self, Tool}
+};
 
 pub struct ToolManager {
     mcp_clients: HashMap<String, Mutex<McpClient>>,
@@ -83,7 +87,7 @@ impl ToolManager {
     /// - this only supports tools that return text for now
     /// - this will prioritize integrated tools if there are conflicting names
     pub fn execute_tool(&self, cm: &ConnectionManager, tool_name: &str, args: &serde_json::Value) 
-    -> Result<Option<String>, Box<dyn std::error::Error>> {
+    -> Result<Vec<ToolResultContentBlock>, Box<dyn std::error::Error>> {
         if self.get_integrated_tooldefs().iter().any(|it| it.name==tool_name) {
             log::info!("Executing integrated tool '{}'", tool_name);
             let result = self.execute_integrated_tool(cm, tool_name, args)
@@ -113,7 +117,7 @@ impl ToolManager {
     }
 
     pub fn execute_mcp_tool(&self, t_name: &str, args: &serde_json::Value) 
-    -> Result<Option<String>, Box<dyn std::error::Error>> {
+    -> Result<Vec<ToolResultContentBlock>, Box<dyn std::error::Error>> {
         let c_name = self.tool_client_map.get(t_name)
             .ok_or(format!("No registered client for tool '{t_name}'"))?;
         let client_mutex = self.mcp_clients.get(c_name)
@@ -121,18 +125,26 @@ impl ToolManager {
         let mut client = client_mutex.lock().expect("Failed to acquire mutex");
         
         let tool_rslt = client.call_tool(t_name, args)?;
-        let text = tool_rslt.content.iter()
-            .filter_map(|c| match c { 
-                McpContent::Text { text } => Some(text.clone()), 
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
 
-        Ok(Some(text))
+        let content: Vec<ToolResultContentBlock> = tool_rslt.content.iter()
+            .filter_map(|block| match block {
+                McpContent::Text { text } => Some(ToolResultContentBlock::Text { text: text.to_string() }),
+            })
+            .collect();
+
+        if tool_rslt.is_error.is_some() && tool_rslt.is_error.unwrap() {
+            match content.get(0) {
+                Some(ToolResultContentBlock::Text { text }) => Err(text.as_str().into()),
+                Some(_) => Err("This tool returned a non-text content block with the is_error flag set".into()),
+                None => Err("This tool returned no content with the is_error flag set".into())
+            }
+        } else {
+            Ok(content)
+        }
     }
 
     pub fn execute_integrated_tool(&self, cm: &ConnectionManager, t_name: &str, args: &serde_json::Value)
-    -> Result<Option<String>, Box<dyn std::error::Error>> {
+    -> Result<Vec<ToolResultContentBlock>, Box<dyn std::error::Error>> {
         let tool = self.integrated_tools.iter().find(|it| it.name()==t_name)
             .ok_or(format!("No registered tool with name '{t_name}'"))?;
         tool.exec(cm, args)

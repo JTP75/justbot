@@ -32,7 +32,7 @@ fn get_fd_lock() -> Result<RwLockWriteGuard<'static, fs::File>, Box<dyn std::err
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    let _ = env_logger::builder().filter_level(log::LevelFilter::Info).try_init();
+    let _ = env_logger::builder().filter_level(log::LevelFilter::Debug).try_init();
 
     // STARTUP PROCEDURE
     // ============================================================================

@@ -1,4 +1,4 @@
-use crate::{app::{connection_manager::ConnectionManager, http::APP_STATE}, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
+use crate::{app::{connection_manager::ConnectionManager, http::APP_STATE}, connection::anthropic_client::{Source, ToolResultContentBlock}, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
 
 use super::{Tool, REGISTRY};
 
@@ -14,7 +14,7 @@ impl Tool for RagTool {
             .build()
             .expect("Tool schema builder failed")
     }
-    fn exec(&self, cm: &ConnectionManager, args: &serde_json::Value) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    fn exec(&self, cm: &ConnectionManager, args: &serde_json::Value) -> Result<Vec<ToolResultContentBlock>, Box<dyn std::error::Error>> {
         let query = args.get("query").ok_or("Arguments are missing a paramater 'query'")?
             .as_str().ok_or("Unexpected argument type for parameter 'query'")?;
         let count = args.get("number_of_documents").ok_or("Arguments are missing a paramater 'number_of_documents'")?
@@ -34,9 +34,40 @@ impl Tool for RagTool {
                 .block_on(cm.query_vdb(collection_name, query, Some(count)))
         })?;
 
-        Ok(Some(serde_json::to_string_pretty(&json_results)?))
+        let content: Vec<ToolResultContentBlock> = json_results
+            .as_array().ok_or("Unexpected JSON type from query_vdb")?
+            .iter().map(|document| ToolResultContentBlock::Document { 
+                source: Source::Text { 
+                    media_type: "text/plain".to_string(), 
+                    data: serde_json::to_string(&document.get("content"))
+                        .unwrap_or("The content of this document is blank".to_string())
+                }, 
+                title: serde_json::to_string(
+                    &serde_json::json!(document.get("file_path"))).ok(), 
+                context: serde_json::to_string(
+                    &serde_json::json!({
+                        "file_path": document.get("file_path"),
+                        "score": document.get("score"),
+                    })).ok()
+            }).collect();
+
+        Ok(content)
     }
 }
+
+// class DocumentBlockParam(TypedDict, total=False):
+//     source: Required[Source]
+
+//     type: Required[Literal["document"]]
+
+//     cache_control: Optional[CacheControlEphemeralParam]
+//     """Create a cache control breakpoint at this content block."""
+
+//     citations: Optional[CitationsConfigParam]
+
+//     context: Optional[str]
+
+//     title: Optional[str]
 
 #[ctor::ctor]
 fn register() {

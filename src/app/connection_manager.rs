@@ -141,8 +141,8 @@ impl ConnectionManager {
         let search_result = self.vdb_client.search_collection(collection_name, qvec, limit).await?;
 
         // build context (json)
-        Ok(serde_json::json!({
-            "relevant_files_from_rag": search_result.iter().map(|sp| {
+        Ok(serde_json::json!(
+            search_result.iter().map(|sp| {
                 serde_json::json!({
                     "file_name": sp.payload
                         .get("file_name"),
@@ -151,6 +151,6 @@ impl ConnectionManager {
                     "score": sp.score,
                 })
             }).collect::<Vec<_>>()
-        }))
+        ))
     }
 }
