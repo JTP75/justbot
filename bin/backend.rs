@@ -54,23 +54,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut tool_mgr = ToolManager::new();
 
     log::info!("Managers created");
-    log::info!("Starting docker-compose services... ");
-    
-    let compose_file = config::PROJECT_DIRS.config_dir().join("docker-compose.yml");
-    let output = std::process::Command::new("docker-compose")
-        .arg("-f")
-        .arg(&compose_file)
-        .arg("up")
-        .arg("-d")
-        .output()?;
-    if !output.status.success() {
-        return Err(format!(
-            "docker-compose up service(s) failed: {}",
-            String::from_utf8_lossy(&output.stderr)
-        ).into());
-    }
-
-    log::info!("Docker-compose services started");
     log::info!("Registering and Starting MCP servers... ");
 
     let server_file = config::PROJECT_DIRS.config_dir().join("mcp_servers.json");
@@ -114,22 +97,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     drop(server);
     
     log::info!("MCP server processes stopped.");
-    log::info!("Shutting down docker-compose services... ");
-
-    let compose_file = config::PROJECT_DIRS.config_dir().join("docker-compose.yml");
-    let output = std::process::Command::new("docker-compose")
-        .arg("-f")
-        .arg(&compose_file)
-        .arg("down")
-        .output()?;
-    if !output.status.success() {
-        return Err(format!(
-            "docker-compose down service(s) failed: {}",
-            String::from_utf8_lossy(&output.stderr)
-        ).into());
-    }
-    
-    log::info!("Docker-compose services stopped.");
     log::info!("Releasing lock...");
 
     drop(guard);

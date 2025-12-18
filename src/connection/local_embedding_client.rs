@@ -12,7 +12,7 @@ impl LocalClient {
     /// Create a new instance of `LocalClient`
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         let host: String = crate::common::config
-            ::get_config("vectordb_config.json", "host")?;
+            ::get_config("vectordb_config.json", "embedding_host")?;
         let port: u64 = crate::common::config
             ::get_config("vectordb_config.json", "embedding_port")?;
         let url = format!("http://{host}:{port}/embed");

@@ -27,7 +27,7 @@ impl QdrantClient {
     /// Create a new gRPC `QdrantClient` instance 
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         let host: String = crate::common::config
-            ::get_config("vectordb_config.json", "host")?;
+            ::get_config("vectordb_config.json", "qdrant_host")?;
         let port: u16 = crate::common::config
             ::get_config("vectordb_config.json", "grpc_port")?;
 

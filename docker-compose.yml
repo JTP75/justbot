@@ -1,0 +1,69 @@
+# docker-compose.yml
+
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - ~/qdrant_storage:/qdrant/storage:z
+    restart: unless-stopped
+    # health check always fails so skip it
+    # healthcheck:
+    #   test: ["CMD", "curl", "http://127.0.0.1:6333/healthz"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 3
+    #   start_period: 30s
+  embedding-service:
+    build:
+      context: ~/misc/pytorch/embedding-service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_NAME=BAAI/bge-base-en-v1.5
+      - DEVICE=cuda
+      - SENTENCE_TRANSFORMERS_HOME=/app/models
+    volumes:
+      - model-cache:/app/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: puetce-backend
+    ports:
+      - "8081:8081"
+    volumes:
+      - ~/.config/rustbot:/root/.config/rustbot
+      - ~/.local/share/rustbot:/root/.local/share/rustbot
+      - ~/.cache/rustbot:/root/.cache/rustbot
+      - /:/app/host
+    depends_on:
+      - qdrant
+      - embedding-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8081/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  model-cache:

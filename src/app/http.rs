@@ -496,7 +496,7 @@ pub struct HttpClient {
 impl HttpClient {
     pub fn new() -> Self {
         let host = crate::common::config
-            ::get_config("bot_config.json", "backend_host")
+            ::get_config("bot_config.json", "client_host")
             .expect("failed to retrieve config");
         let port = crate::common::config
             ::get_config("bot_config.json", "backend_port")
