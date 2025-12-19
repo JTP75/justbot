@@ -8,6 +8,8 @@ use qdrant_client::{
     }
 };
 
+use crate::common::config_const::{json::VECTORDB_CONFIG, keys::{DIM, GRPC_PORT, HOST}};
+
 pub struct QdrantClient {
     client: Qdrant,
     _url: String,
@@ -27,9 +29,9 @@ impl QdrantClient {
     /// Create a new gRPC `QdrantClient` instance 
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         let host: String = crate::common::config
-            ::get_config("vectordb_config.json", "qdrant_host")?;
+            ::get_config(VECTORDB_CONFIG, HOST)?;
         let port: u16 = crate::common::config
-            ::get_config("vectordb_config.json", "grpc_port")?;
+            ::get_config(VECTORDB_CONFIG, GRPC_PORT)?;
 
         let url = format!("http://{}:{}/collections", host, port);
         Ok(Self {
@@ -51,7 +53,7 @@ impl QdrantClient {
             vectors_config: Some(VectorsConfig { 
                 config: Some(vectors_config::Config::Params(VectorParams {
                     size: crate::common::config
-                        ::get_config::<u64>("vectordb_config.json", "dimensionality")?,
+                        ::get_config::<u64>(VECTORDB_CONFIG, DIM)?,
                     distance: Distance::Cosine.into(),
                     ..Default::default()
                 })), 

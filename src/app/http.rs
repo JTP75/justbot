@@ -11,7 +11,7 @@ use derive_builder::Builder;
 
 use crate::{
     app::{connection_manager::ConnectionManager, tool_manager::ToolManager}, 
-    common::config, connection::anthropic_client::{AnthropicToolDefinition, Message, MessagesResponse, ToolResultContentBlock}
+    common::{config, config_const::{json::BOT_CONFIG, keys::{CLIENT_HOST, HOST, MOTD_FILENAME, PORT}}}, connection::anthropic_client::{AnthropicToolDefinition, Message, MessagesResponse, ToolResultContentBlock}
 };
 
 // lazy mutex for server state
@@ -27,7 +27,7 @@ pub static APP_STATE: Lazy<Mutex<AppState>> = Lazy::new(
         collection_name: None,
         motd: {
             let filename: String = crate::common::config
-                ::get_config("bot_config.json","motd_filename")
+                ::get_config(BOT_CONFIG, MOTD_FILENAME)
                 .expect("failed to get config");
             let value = fs::read_to_string(config::PROJECT_DIRS.data_dir().join(filename));
             match value {
@@ -377,10 +377,10 @@ pub struct HttpServer {
 impl HttpServer {
     pub fn new() -> Self {
         let host = crate::common::config
-            ::get_config("bot_config.json", "backend_host")
+            ::get_config(BOT_CONFIG, HOST)
             .expect("failed to retrieve config");
         let port = crate::common::config
-            ::get_config("bot_config.json", "backend_port")
+            ::get_config(BOT_CONFIG, PORT)
             .expect("failed to retrieve config");
         
         let endpoints: Vec<Arc<dyn HttpEndpoint>> = vec![
@@ -496,10 +496,10 @@ pub struct HttpClient {
 impl HttpClient {
     pub fn new() -> Self {
         let host = crate::common::config
-            ::get_config("bot_config.json", "client_host")
+            ::get_config(BOT_CONFIG, CLIENT_HOST)
             .expect("failed to retrieve config");
         let port = crate::common::config
-            ::get_config("bot_config.json", "backend_port")
+            ::get_config(BOT_CONFIG, PORT)
             .expect("failed to retrieve config");
         Self { client: Client::new(), host, port }
     }

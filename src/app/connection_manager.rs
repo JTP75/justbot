@@ -1,6 +1,6 @@
 use std::{fs, path::Path};
 
-use crate::{common::config, connection::{EmbeddingClient, anthropic_client::{AnthropicClient}, local_embedding_client::LocalClient, qdrant_client::QdrantClient, voyage_client::VoyageClient}};
+use crate::{common::{config, config_const::{json::{EMBEDDING_CONFIG, VECTORDB_CONFIG}, keys::{DEFAULT_SEARCH_LIMIT, ENABLE_LOCAL, ENABLE_VOYAGE}}}, connection::{EmbeddingClient, anthropic_client::AnthropicClient, local_embedding_client::LocalClient, qdrant_client::QdrantClient, voyage_client::VoyageClient}};
 
 #[derive(Debug)]
 pub struct ConnectionManager {
@@ -13,10 +13,10 @@ impl ConnectionManager {
 
     pub fn new() -> Self {
         let use_voyage: bool = config
-            ::get_config("vectordb_config.json", "use_voyage_embedding")
+            ::get_config(EMBEDDING_CONFIG, ENABLE_VOYAGE)
             .expect("get config failed");
         let use_local: bool = config
-            ::get_config("vectordb_config.json", "use_local_embedding")
+            ::get_config(EMBEDDING_CONFIG, ENABLE_LOCAL)
             .expect("get config failed");
         
         let embedding_client: Box<dyn EmbeddingClient> = if use_voyage {
@@ -130,7 +130,7 @@ impl ConnectionManager {
         let qvec = self.embedding_client.get_embedding(query, "query").await?;
 
         let config_limit = crate::common::config
-            ::get_config("vectordb_config.json", "default_search_limit")?;
+            ::get_config(VECTORDB_CONFIG, DEFAULT_SEARCH_LIMIT)?;
         let limit = if let Some(limit) = search_limit && limit < config_limit {
             limit
         } else {

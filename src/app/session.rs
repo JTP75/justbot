@@ -2,6 +2,9 @@ use std::{ffi::OsStr, fs, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 
+use crate::common::config_const::json::BOT_CONFIG;
+use crate::common::config_const::keys::MOTD_FILENAME;
+use crate::common::config_const::prompts::SYSTEM_BASE;
 use crate::{common::config, app::puetce::PuetceApp};
 use crate::connection::anthropic_client::{Message, ContentBlock, Role};
 
@@ -93,7 +96,7 @@ impl SessionManager {
         convo_copy.push(topic_prompt);
         
         let sys_prompt: String = crate::common::config
-            ::get_config("bot_config.json","base_sys_prompt")?;
+            ::get_prompt(SYSTEM_BASE)?;
         let topic_response = bot.query_llm(&convo_copy, &sys_prompt, 0.0)?;
 
         match topic_response.content.first() {
@@ -108,13 +111,13 @@ impl SessionManager {
 
         let json = serde_json::to_string_pretty(&bot.get_motd())?;
         let filename: String = crate::common::config
-            ::get_config("bot_config.json","motd_filename")?;
+            ::get_config(BOT_CONFIG, MOTD_FILENAME)?;
         Ok(fs::write(&self.data_dir.join(filename), json)?)
     }
 
     pub fn load_motd(&self, _bot: &mut PuetceApp) -> Result<(),Box<dyn std::error::Error>> {
         let filename: String = crate::common::config
-            ::get_config("bot_config.json","motd_filename")?;
+            ::get_config(BOT_CONFIG, MOTD_FILENAME)?;
         let json = fs::read_to_string(&self.data_dir.join(filename))?;
         let _motd: (chrono::NaiveDate, Option<String>) = serde_json::from_str(&json)?;
         Ok(())

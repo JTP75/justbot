@@ -1,4 +1,4 @@
-use crate::{app::{connection_manager::ConnectionManager, http::APP_STATE}, connection::anthropic_client::{Source, ToolResultContentBlock}, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
+use crate::{app::{connection_manager::ConnectionManager, http::APP_STATE}, common::config_const::{json::VECTORDB_CONFIG, keys::DEFAULT_COLLECTION}, connection::anthropic_client::{Source, ToolResultContentBlock}, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
 
 use super::{Tool, REGISTRY};
 
@@ -21,7 +21,7 @@ impl Tool for RagTool {
             .as_u64().ok_or("Unexpected argument type for parameter 'number_of_documents'")?;
 
         let default_collection = crate::common::config
-            ::get_config::<String>("bot_config.json", "default_collection")?;
+            ::get_config::<String>(VECTORDB_CONFIG, DEFAULT_COLLECTION)?;
         let as_cname = &APP_STATE.lock().unwrap().collection_name;
         let collection_name = if let Some(collection_name) = as_cname { 
             collection_name.as_str()

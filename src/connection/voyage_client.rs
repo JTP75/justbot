@@ -2,7 +2,7 @@
 
 use reqwest::{Client, ClientBuilder};
 
-use crate::{common::config, connection::EmbeddingClient};
+use crate::{common::{config, config_const::{json::VECTORDB_CONFIG, keys::{VOYAGE_MODEL, VOYAGE_URL}}}, connection::EmbeddingClient};
 
 #[derive(Debug)]
 pub struct VoyageClient {
@@ -22,9 +22,9 @@ impl VoyageClient {
         Ok(Self {
             client: ClientBuilder::default().build()?,
             model: crate::common::config
-                ::get_config("vectordb_config.json", "embedding_model")?,
+                ::get_config(VECTORDB_CONFIG, VOYAGE_MODEL)?,
             url: crate::common::config
-                ::get_config("vectordb_config.json", "embedding_url")?,
+                ::get_config(VECTORDB_CONFIG, VOYAGE_URL)?,
             api_key: api_key,
         })
     }

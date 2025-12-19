@@ -1,4 +1,4 @@
-use crate::{connection::anthropic_client::{ContentBlock, Message, Role}, app::{puetce::PuetceApp, session::SessionManager}};
+use crate::{app::{puetce::PuetceApp, session::SessionManager}, common::config_const::prompts::SYSTEM_TOOL, connection::anthropic_client::{ContentBlock, Message, Role}};
 
 use super::{Command, REGISTRY};
 
@@ -37,7 +37,7 @@ impl Command for NewsCommand {
         bot.push_message(user_message);
 
         let sys_prompt: String = crate::common::config
-            ::get_config("bot_config.json", "tool_sys_prompt")?;
+            ::get_prompt(SYSTEM_TOOL)?;
         let response = bot.query_llm_with_tools(&bot.get_messages(), &sys_prompt, 0.75)?;
 
         let mut agent_message = Message {

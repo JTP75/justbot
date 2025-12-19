@@ -1,6 +1,6 @@
 use chrono::Local;
 
-use crate::{connection::anthropic_client::{ContentBlock, Message, Role}, app::{puetce::PuetceApp, session::SessionManager}};
+use crate::{app::{puetce::PuetceApp, session::SessionManager}, common::config_const::prompts::SYSTEM_TOOL, connection::anthropic_client::{ContentBlock, Message, Role}};
 
 use super::{Command, REGISTRY};
 
@@ -21,7 +21,7 @@ impl Command for ScheduleCommand {
         bot.push_message(user_message);
 
         let sys_prompt: String = crate::common::config
-            ::get_config("bot_config.json", "tool_sys_prompt")?;
+            ::get_prompt(SYSTEM_TOOL)?;
 
         let instructions = serde_json::to_string_pretty(&serde_json::json!({
             "general instructions": "These are default instructions for creating calendar events if the user does not specify certain fields. The goal is to make it so the user does not need to be specific when scheduling events. There are a few fields that are mandatory.",

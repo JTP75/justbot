@@ -1,6 +1,6 @@
 use reqwest::{Client, ClientBuilder};
 
-use crate::connection::EmbeddingClient;
+use crate::{common::config_const::{json::EMBEDDING_CONFIG, keys::{HOST, PORT}}, connection::EmbeddingClient};
 
 #[derive(Debug)]
 pub struct LocalClient {
@@ -12,9 +12,9 @@ impl LocalClient {
     /// Create a new instance of `LocalClient`
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         let host: String = crate::common::config
-            ::get_config("vectordb_config.json", "embedding_host")?;
+            ::get_config(EMBEDDING_CONFIG, HOST)?;
         let port: u64 = crate::common::config
-            ::get_config("vectordb_config.json", "embedding_port")?;
+            ::get_config(EMBEDDING_CONFIG, PORT)?;
         let url = format!("http://{host}:{port}/embed");
         Ok(Self { client: ClientBuilder::default().build()?, url })
     }

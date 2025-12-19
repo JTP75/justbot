@@ -1,4 +1,4 @@
-use crate::app::{puetce::PuetceApp, session::SessionManager};
+use crate::{app::{puetce::PuetceApp, session::SessionManager}, common::config_const::{json::ANTHROPIC_CONFIG, keys::DEFAULT_MODEL}};
 
 use super::{Command, REGISTRY};
 
@@ -21,7 +21,7 @@ impl Command for SetModelCommand {
             })
             .map_or_else(
                 || crate::common::config
-                    ::get_config::<String>("anthropic_config.json", "default_model"),
+                    ::get_config::<String>(ANTHROPIC_CONFIG, DEFAULT_MODEL),
                 Ok,
             )?;
         bot.set_model(&model_id);

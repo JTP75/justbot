@@ -1,6 +1,6 @@
 #![allow(deprecated)]
 
-use crate::{connection::anthropic_client::{ContentBlock, Message, Role}, app::{puetce::PuetceApp, session::SessionManager}};
+use crate::{app::{puetce::PuetceApp, session::SessionManager}, common::config_const::{json::VECTORDB_CONFIG, keys::DEFAULT_COLLECTION, prompts::SYSTEM_RAG}, connection::anthropic_client::{ContentBlock, Message, Role}};
 
 use super::{Command, REGISTRY};
 
@@ -16,14 +16,14 @@ impl Command for MessageRagCommand {
         let collection_name: String = match bot.get_current_collection() {
             Some(cn) => cn,
             None => crate::common::config
-                ::get_config("bot_config.json", "default_collection")?,
+                ::get_config(VECTORDB_CONFIG, DEFAULT_COLLECTION)?,
         };
 
         let user_message = bot.generate_rag_message(&collection_name, &args.join(" "))?;
         bot.push_message(user_message);
 
         let sys_prompt: String = crate::common::config
-            ::get_config("bot_config.json", "rag_sys_prompt")?;
+            ::get_prompt(SYSTEM_RAG)?;
         let response = bot.query_llm(&bot.get_messages(), &sys_prompt, 0.75)?;
 
         let agent_message = Message {

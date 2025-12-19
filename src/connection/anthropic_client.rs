@@ -5,6 +5,8 @@ use dotenvy;
 use reqwest::{Client, ClientBuilder};
 use serde::{Deserialize, Serialize};
 
+use crate::common::config_const::{json::ANTHROPIC_CONFIG, keys::{ANTHROPIC_VERSION, BASE_URL, DEFAULT_MODEL, MAX_INPUT_TPM, MAX_OUTPUT_TPM, MAX_TOKENS}};
+
 // structs
 
 // anthropic core
@@ -142,10 +144,10 @@ impl AnthropicUsageMonitor {
     pub fn new() -> Self {
         let max_tpm: (usize,usize) = (
             crate::common::config
-                ::get_config("anthropic_config.json", "max_input_tpm")
+                ::get_config(ANTHROPIC_CONFIG, MAX_INPUT_TPM)
                 .expect("failed get from config"),
             crate::common::config
-                ::get_config("anthropic_config.json", "max_output_tpm")
+                ::get_config(ANTHROPIC_CONFIG, MAX_OUTPUT_TPM)
                 .expect("failed get from config"),
         );
         Self {
@@ -211,13 +213,13 @@ impl AnthropicClient {
             client: ClientBuilder::default().build()?,
             api_key: api_key,
             url: crate::common::config
-                ::get_config("anthropic_config.json", "base_url")?,
+                ::get_config(ANTHROPIC_CONFIG, BASE_URL)?,
             api_version: crate::common::config
-                ::get_config("anthropic_config.json", "anthropic_version")?,
+                ::get_config(ANTHROPIC_CONFIG, ANTHROPIC_VERSION)?,
             default_model: crate::common::config
-                ::get_config("anthropic_config.json", "default_model")?,
+                ::get_config(ANTHROPIC_CONFIG, DEFAULT_MODEL)?,
             max_tokens: crate::common::config
-                ::get_config("anthropic_config.json", "max_tokens")?,
+                ::get_config(ANTHROPIC_CONFIG, MAX_TOKENS)?,
             usage_monitor: AnthropicUsageMonitor::new()
         })
     }

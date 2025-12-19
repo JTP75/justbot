@@ -1,4 +1,4 @@
-use puetce::*;
+use puetce::{common::config_const::{json::BOT_CONFIG, keys::DEFAULT_NAME}, *};
 
 use std::{sync::{Arc, atomic::{AtomicBool, Ordering}}, thread};
 
@@ -15,7 +15,7 @@ fn main() {
 
     // init bot and session mgr
     let mut bot = PuetceApp::new(crate::common::config
-        ::get_config::<String>("bot_config.rs", "default_name")
+        ::get_config::<String>(BOT_CONFIG, DEFAULT_NAME)
         .unwrap_or("rustbot".into()));
     let mut sm = SessionManager::new();
     

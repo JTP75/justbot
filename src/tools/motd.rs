@@ -2,7 +2,7 @@ use std::fs;
 
 use chrono::Local;
 
-use crate::{app::{connection_manager::ConnectionManager, http::APP_STATE}, common::config, connection::anthropic_client::ToolResultContentBlock, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
+use crate::{app::{connection_manager::ConnectionManager, http::APP_STATE}, common::{config, config_const::{json::BOT_CONFIG, keys::MOTD_FILENAME}}, connection::anthropic_client::ToolResultContentBlock, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
 
 use super::{Tool, REGISTRY};
 
@@ -60,7 +60,7 @@ impl Tool for SetMotdTool {
         APP_STATE.lock().unwrap().motd = new_motd;
 
         let filename: String = crate::common::config
-            ::get_config("bot_config.json","motd_filename")?;
+            ::get_config(BOT_CONFIG, MOTD_FILENAME)?;
 
         fs::write(config::PROJECT_DIRS.data_dir().join(filename), json)?;
 

@@ -9,7 +9,7 @@ use std::{
 
 use serde_json::Value;
 
-use crate::mcp::{McpRoot, McpRootBuilder, McpTool, McpToolResult};
+use crate::{common::config_const::{json::BOT_CONFIG, keys::START_DIR}, mcp::{McpRoot, McpRootBuilder, McpTool, McpToolResult}};
 
 #[derive(Debug)]
 pub struct McpClient {
@@ -30,7 +30,7 @@ impl McpClient {
     pub fn new(command: &str, args: &[&str], env: Option<HashMap<String, String>>) 
     -> Result<Self, Box<dyn std::error::Error>> {
         let sd: String = crate::common::config
-            ::get_config("bot_config.json", "start_dir")?;
+            ::get_config(BOT_CONFIG, START_DIR)?;
 
         let mut command_obj = Command::new(command);
         command_obj

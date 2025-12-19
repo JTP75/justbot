@@ -1,6 +1,6 @@
 use std::fs;
 
-use crate::app::{puetce::PuetceApp, session::SessionManager};
+use crate::{app::{puetce::PuetceApp, session::SessionManager}, common::config_const::{json::{EMBEDDING_CONFIG, VECTORDB_CONFIG}, keys::{DEFAULT_COLLECTION, ENABLE_PDF_EMBEDDING}}};
 
 use super::{Command, REGISTRY};
 
@@ -15,7 +15,7 @@ impl Command for StoreCommand {
         let collection_name: String = match bot.get_current_collection() {
             Some(cn) => cn,
             None => crate::common::config
-                ::get_config("bot_config.json", "default_collection")?,
+                ::get_config(VECTORDB_CONFIG, DEFAULT_COLLECTION)?,
         };
         let default_path = ".".to_string(); 
         let path_str = args.first().unwrap_or(&default_path);
@@ -29,7 +29,7 @@ impl Command for StoreCommand {
 
 
             let convert_pdfs: bool = crate::common::config
-                ::get_config("bot_config.json", "enable_pdf_embedding")?;
+                ::get_config(EMBEDDING_CONFIG, ENABLE_PDF_EMBEDDING)?;
 
             // get list of files in directory
             let paths = fs::read_dir(path)?

@@ -1,4 +1,4 @@
-use crate::{connection::anthropic_client::{ContentBlock, Message, Role}, app::{puetce::PuetceApp, session::SessionManager}};
+use crate::{app::{puetce::PuetceApp, session::SessionManager}, common::config_const::prompts::SYSTEM_BASE, connection::anthropic_client::{ContentBlock, Message, Role}};
 
 use super::{Command, REGISTRY};
 
@@ -19,7 +19,7 @@ impl Command for MessageCommand {
         bot.push_message(user_message);
 
         let sys_prompt: String = crate::common::config
-            ::get_config("bot_config.json", "base_sys_prompt")?;
+            ::get_prompt(SYSTEM_BASE)?;
         let sys_prompt = format!(
             "{}\n{{MESSAGE MODE}}\n{}",
             sys_prompt,
