@@ -344,7 +344,7 @@ impl HttpEndpoint for HealthEndpoint {
             .iter()
             .map(|td| td.name.clone())
             .collect::<Vec<_>>()
-            .join("\t\n");
+            .join(", ");
 
         let anthropic_status = "todo";
         let qdrant_status = "todo";

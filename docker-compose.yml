@@ -51,15 +51,16 @@ services:
     ports:
       - "8081:8081"
     volumes:
-      - ~/.config/rustbot:/root/.config/rustbot
-      - ~/.local/share/rustbot:/root/.local/share/rustbot
-      - ~/.cache/rustbot:/root/.cache/rustbot
-      - /:/app/host
+      - ${HOME}/.config/rustbot:/root/.config/rustbot
+      - ${HOME}/.config:/root/.config
+      - ${HOME}/.local/share/rustbot:/root/.local/share/rustbot
+      - ${HOME}/.cache/rustbot:/root/.cache/rustbot
+      - /home:/home
     depends_on:
       - qdrant
       - embedding-service
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8081/health"]
+      test: ["CMD", "curl", "http://127.0.0.1:8081/health?endpoint=health&data=''"]
       interval: 10s
       timeout: 5s
       retries: 3
