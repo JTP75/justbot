@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{any::Any, fmt::Debug};
 
 #[async_trait::async_trait]
 pub trait EmbeddingClient: Debug + Sync + Send {
@@ -17,6 +17,9 @@ pub trait EmbeddingClient: Debug + Sync + Send {
     ///     - use "query" to get the query vector for a search query
     async fn get_embeddings(&self, texts: Vec<&str>, input_type: &str) 
     -> Result<Vec<Vec<f32>>, Box<dyn std::error::Error>>;
+
+    /// Returns object as a dyn Any
+    fn as_any(&self) -> &dyn Any;
 }
 
 pub mod anthropic_client;

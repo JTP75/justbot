@@ -1,5 +1,7 @@
 // #![allow(unused)]
 
+use std::any::Any;
+
 use reqwest::{Client, ClientBuilder};
 
 use crate::{common::{config, config_const::{json::VECTORDB_CONFIG, keys::{VOYAGE_MODEL, VOYAGE_URL}}}, connection::EmbeddingClient};
@@ -87,6 +89,8 @@ impl EmbeddingClient for VoyageClient {
             Err("Embeddings missing from response".into())
         }
     }
+
+    fn as_any(&self) -> &dyn Any { self }
 }
 
 #[cfg(test)]

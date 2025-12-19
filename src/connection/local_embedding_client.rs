@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use reqwest::{Client, ClientBuilder};
 
 use crate::{common::config_const::{json::EMBEDDING_CONFIG, keys::{HOST, PORT}}, connection::EmbeddingClient};
@@ -63,6 +65,8 @@ impl EmbeddingClient for LocalClient {
         
         Ok(result)
     }
+
+    fn as_any(&self) -> &dyn Any { self }
 }
 
 #[cfg(test)]

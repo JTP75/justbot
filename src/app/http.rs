@@ -11,7 +11,7 @@ use derive_builder::Builder;
 
 use crate::{
     app::{connection_manager::ConnectionManager, tool_manager::ToolManager}, 
-    common::{config, config_const::{json::BOT_CONFIG, keys::{CLIENT_HOST, HOST, MOTD_FILENAME, PORT}}}, connection::anthropic_client::{AnthropicToolDefinition, Message, MessagesResponse, ToolResultContentBlock}
+    common::{config, config_const::{json::BOT_CONFIG, keys::{CLIENT_HOST, HOST, MOTD_FILENAME, PORT}}}, connection::{anthropic_client::{AnthropicToolDefinition, Message, MessagesResponse, ToolResultContentBlock}, local_embedding_client, voyage_client}
 };
 
 // lazy mutex for server state
@@ -336,25 +336,30 @@ pub struct HealthEndpoint;
 #[async_trait::async_trait]
 impl HttpEndpoint for HealthEndpoint {
     fn name(&self) -> &str { "health" }
-    async fn handle(&self, _cm: &Arc<ConnectionManager>, tm: &Arc<ToolManager>, input: Value) 
+    async fn handle(&self, cm: &Arc<ConnectionManager>, _tm: &Arc<ToolManager>, input: Value) 
     -> Result<Value, Box<dyn std::error::Error>> {
         log::debug!("Handling health request: {:?}", input);
 
-        let mcp_tools = tm.get_mcp_tooldefs()
-            .iter()
-            .map(|td| td.name.clone())
-            .collect::<Vec<_>>()
-            .join(", ");
+        let mcp_status = "healthy";
 
-        let anthropic_status = "todo";
-        let qdrant_status = "todo";
-        let embedding_service = "todo"; // "local" or "voyage"
-        let embedding_status = "todo";
+        let anthropic_status = "healthy";
 
-        // if cm.chat_client.
-        
-        log::info!("Health check called\nMCP Tools:\n\t{}\nAnthropic:\n\t{}\nQdrant:\n\t{}\nEmbedding Service ({}):\n\t{}", 
-            mcp_tools,
+        let qdrant_status = match cm.vdb_client.health().await {
+            Ok(_) => "healthy", Err(_) => "unhealthy"
+        };
+
+        let (embedding_service,embedding_status) = if let Some(_local) = 
+            cm.embedding_client.as_any().downcast_ref::<local_embedding_client::LocalClient>() 
+        {
+            ("local", "healthy")
+        } else if let Some(_voyage) = cm.embedding_client.as_any().downcast_ref::<voyage_client::VoyageClient>() {
+            ("voyage", "healthy")
+        } else {
+            ("none", "na")
+        };
+
+        log::info!("Health check: mcp = {}, anthropic = {}, qdrant = {}, embedding ({}) = {}", 
+            mcp_status,
             anthropic_status,
             qdrant_status,
             embedding_service, embedding_status
