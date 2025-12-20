@@ -5,7 +5,7 @@ use puetce::{
     app::{
         connection_manager::ConnectionManager, http::HttpServer, tool_manager::ToolManager
     }, 
-    common::config, 
+    common::{config, config_const::{json::BOT_CONFIG, keys::ENABLE_MCP}}, 
     mcp::McpConfig
 };
 
@@ -54,26 +54,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut tool_mgr = ToolManager::new();
 
     log::info!("Managers created");
-    log::info!("Registering and Starting MCP servers... ");
 
-    let server_file = config::PROJECT_DIRS.config_dir().join("mcp_servers.json");
-    let json = fs::read_to_string(server_file).unwrap();
-    let mcp_config: McpConfig = serde_json::from_str(&json)?;
-    for mcp_server in mcp_config.mcp_servers {
-        let args: Vec<&str> = mcp_server.args.iter().map(|s| s.as_str()).collect();
-        if let Err(e) = tool_mgr.register_mcp_server(
-            mcp_server.name.clone(), 
-            &mcp_server.command, 
-            &args,
-            mcp_server.env
-        ) {
-            log::error!("Failed to register server '{}':\n{}", mcp_server.name, e);
-        } else {
-            log::info!("Successfully registered server '{}'", mcp_server.name);
+    if config::get_config(BOT_CONFIG, ENABLE_MCP).unwrap_or(false) {
+        log::info!("Registering and Starting MCP servers... ");
+
+        let server_file = config::PROJECT_DIRS.config_dir().join("mcp_servers.json");
+        let json = fs::read_to_string(server_file).unwrap();
+        let mcp_config: McpConfig = serde_json::from_str(&json)?;
+        for mcp_server in mcp_config.mcp_servers {
+            let args: Vec<&str> = mcp_server.args.iter().map(|s| s.as_str()).collect();
+            if let Err(e) = tool_mgr.register_mcp_server(
+                mcp_server.name.clone(), 
+                &mcp_server.command, 
+                &args,
+                mcp_server.env
+            ) {
+                log::error!("Failed to register server '{}':\n{}", mcp_server.name, e);
+            } else {
+                log::info!("Successfully registered server '{}'", mcp_server.name);
+            }
         }
+
+        log::info!("MCP servers started");
+    } else {
+        log::warn!("MCP servers are disabled in bot_config.json");
     }
 
-    log::info!("MCP servers started");
     log::info!("Startup complete");
 
     // HTTP SERVER

@@ -181,8 +181,10 @@ impl HttpEndpoint for SendMessageEndpoint {
         log::debug!("Handling send_message request: {:?}", input);
         let args = serde_json::from_value::<SendMessageParams>(input)?;
         let tools = if args.use_tools { Some(&tm.get_tools_as_tooldefs()) } else { None };
-        let response = cm.chat_client.call_model(
-            &args.messages, &args.sys_prompt, tools, args.model, args.randomness).await;
+        let response = cm.chat_client.as_ref()
+            .ok_or("anthropic client is not enabled")?
+            .call_model(
+                &args.messages, &args.sys_prompt, tools, args.model, args.randomness).await;
         match response {
             Ok(response) => Ok(json!(response)),
             Err(e) => {
@@ -201,7 +203,8 @@ impl HttpEndpoint for GetTpmEndpoint {
     async fn handle(&self, cm: &Arc<ConnectionManager>, _tm: &Arc<ToolManager>, input: Value) 
     -> Result<Value, Box<dyn std::error::Error>> {
         log::debug!("Handling get_tpm request: {:?}", input);
-        Ok(json!(cm.chat_client.usage_monitor.tpm()))
+        Ok(json!(cm.chat_client.as_ref()
+            .ok_or("anthropic client is not enabled")?.usage_monitor.tpm()))
     }
 }
 
@@ -213,7 +216,8 @@ impl HttpEndpoint for GetMaxTpmEndpoint {
     async fn handle(&self, cm: &Arc<ConnectionManager>, _tm: &Arc<ToolManager>, input: Value) 
     -> Result<Value, Box<dyn std::error::Error>> {
         log::debug!("Handling get_max_tpm request: {:?}", input);
-        Ok(json!(cm.chat_client.usage_monitor.max_tpm()))
+        Ok(json!(cm.chat_client.as_ref()
+            .ok_or("anthropic client is not enabled")?.usage_monitor.max_tpm()))
     }
 }
 
@@ -298,7 +302,9 @@ impl HttpEndpoint for ListCollectionsEndpoint {
     async fn handle(&self, cm: &Arc<ConnectionManager>, _tm: &Arc<ToolManager>, input: Value) 
     -> Result<Value, Box<dyn std::error::Error>> {
         log::debug!("Handling list_collections request: {:?}", input);
-        let collections = cm.vdb_client.list_collections().await?;
+        let collections = cm.vdb_client.as_ref()
+            .ok_or("vector database is not enabled")?
+            .list_collections().await?;
         Ok(json!(collections))
     }
 }
@@ -312,7 +318,9 @@ impl HttpEndpoint for AddCollectionEndpoint {
     -> Result<Value, Box<dyn std::error::Error>> {
         log::debug!("Handling add_collection request: {:?}", input);
         let collection_name = serde_json::from_value::<String>(input)?;
-        cm.vdb_client.add_collection(&collection_name).await?;
+        cm.vdb_client.as_ref()
+            .ok_or("vector database is not enabled")?
+            .add_collection(&collection_name).await?;
         Ok(json!(null))
     }
 }
@@ -342,20 +350,28 @@ impl HttpEndpoint for HealthEndpoint {
 
         let mcp_status = "healthy";
 
-        let anthropic_status = "healthy";
-
-        let qdrant_status = match cm.vdb_client.health().await {
-            Ok(_) => "healthy", Err(_) => "unhealthy"
+        let anthropic_status = if let Some(_c) = cm.chat_client.as_ref() {
+            "healthy"
+        } else { 
+            "disabled" 
         };
 
-        let (embedding_service,embedding_status) = if let Some(_local) = 
-            cm.embedding_client.as_any().downcast_ref::<local_embedding_client::LocalClient>() 
-        {
-            ("local", "healthy")
-        } else if let Some(_voyage) = cm.embedding_client.as_any().downcast_ref::<voyage_client::VoyageClient>() {
-            ("voyage", "healthy")
+        let qdrant_status = if let Some(c) = cm.vdb_client.as_ref() {
+            match c.health().await { Ok(_) => "healthy", Err(_) => "unhealthy" }
+        } else { 
+            "disabled" 
+        };
+
+        let (embedding_service,embedding_status) = if let Some(c) = cm.embedding_client.as_ref() {
+            if let Some(_local) = c.as_any().downcast_ref::<local_embedding_client::LocalClient>() {
+                ("local", "healthy")
+            } else if let Some(_voyage) = c.as_any().downcast_ref::<voyage_client::VoyageClient>() {
+                ("voyage", "healthy")
+            } else {
+                ("none", "na")
+            }
         } else {
-            ("none", "na")
+            ("none", "disabled")
         };
 
         log::info!("Health check: mcp = {}, anthropic = {}, qdrant = {}, embedding ({}) = {}", 

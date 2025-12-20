@@ -19,6 +19,8 @@ pub mod keys {
     pub const DEFAULT_NAME: &str = "default_name";
     pub const MOTD_FILENAME: &str = "motd_filename";
     pub const CLIENT_HOST: &str = "client_host";
+    pub const ENABLE_MCP: &str = "enable_mcp_servers";
+    pub const ENABLE_CUSTOM_TOOLS: &str = "enable_custom_tools";
 
     pub const ENABLE_ANTHROPIC: &str = "enable_anthropic";
     pub const BASE_URL: &str = "base_url";
@@ -28,6 +30,7 @@ pub mod keys {
     pub const MAX_INPUT_TPM: &str = "max_input_tpm";
     pub const MAX_OUTPUT_TPM: &str = "max_output_tpm";
 
+    pub const ENABLE_QDRANT: &str = "enable_qdrant";
     pub const REST_PORT: &str = "rest_port";
     pub const GRPC_PORT: &str = "grpc_port";
     pub const DEFAULT_COLLECTION: &str = "default_collection";

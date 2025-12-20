@@ -3,9 +3,7 @@
 use std::{collections::HashMap, sync::Mutex};
 
 use crate::{
-    app::connection_manager::ConnectionManager, 
-    connection::anthropic_client::{AnthropicToolDefinition, ToolResultContentBlock}, 
-    mcp::{McpContent, McpTool, client::McpClient}, tools::{self, Tool}
+    app::connection_manager::ConnectionManager, common::config_const::{json::BOT_CONFIG, keys::ENABLE_CUSTOM_TOOLS}, connection::anthropic_client::{AnthropicToolDefinition, ToolResultContentBlock}, mcp::{McpContent, McpTool, client::McpClient}, tools::{self, Tool}
 };
 
 pub struct ToolManager {
@@ -28,7 +26,12 @@ impl std::fmt::Debug for ToolManager {
 impl ToolManager {
 
     pub fn new() -> Self {
-        let itools = tools::REGISTRY.lock().unwrap().tools();
+        let itools = if crate::common::config
+            ::get_config(BOT_CONFIG, ENABLE_CUSTOM_TOOLS).unwrap_or(false) {
+            tools::REGISTRY.lock().unwrap().tools()
+        } else {
+            vec![]
+        };
         Self {
             mcp_clients: HashMap::new(),
             mcp_tools: Vec::new(),

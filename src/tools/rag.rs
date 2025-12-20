@@ -1,4 +1,4 @@
-use crate::{app::{connection_manager::ConnectionManager, http::APP_STATE}, common::config_const::{json::VECTORDB_CONFIG, keys::DEFAULT_COLLECTION}, connection::anthropic_client::{Source, ToolResultContentBlock}, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
+use crate::{app::{connection_manager::ConnectionManager, http::APP_STATE}, common::config_const::{json::{EMBEDDING_CONFIG, VECTORDB_CONFIG}, keys::{DEFAULT_COLLECTION, ENABLE_LOCAL, ENABLE_QDRANT, ENABLE_VOYAGE}}, connection::anthropic_client::{Source, ToolResultContentBlock}, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
 
 use super::{Tool, REGISTRY};
 
@@ -55,24 +55,23 @@ impl Tool for RagTool {
     }
 }
 
-// class DocumentBlockParam(TypedDict, total=False):
-//     source: Required[Source]
-
-//     type: Required[Literal["document"]]
-
-//     cache_control: Optional[CacheControlEphemeralParam]
-//     """Create a cache control breakpoint at this content block."""
-
-//     citations: Optional[CitationsConfigParam]
-
-//     context: Optional[str]
-
-//     title: Optional[str]
-
 #[ctor::ctor]
 fn register() {
-    REGISTRY.lock().unwrap().register(
-        "custom-rag-text".into(), 
-        || Box::new(RagTool),
-    );
+    
+    let use_qdrant: bool = crate::common::config
+        ::get_config(VECTORDB_CONFIG, ENABLE_QDRANT)
+        .unwrap_or(false);
+    let use_local_mbed: bool = crate::common::config
+        ::get_config(EMBEDDING_CONFIG, ENABLE_LOCAL)
+        .unwrap_or(false);
+    let use_voyage_mbed: bool = crate::common::config
+        ::get_config(EMBEDDING_CONFIG, ENABLE_VOYAGE)
+        .unwrap_or(false);
+
+    if use_qdrant && (use_local_mbed || use_voyage_mbed) {
+        REGISTRY.lock().unwrap().register(
+            "custom-rag-text".into(), 
+            || Box::new(RagTool),
+        );
+    }
 }
