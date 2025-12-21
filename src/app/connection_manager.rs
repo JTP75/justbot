@@ -198,3 +198,48 @@ impl ConnectionManager {
         }
     }
 }
+
+/// Note
+/// 
+/// - these tests need embedding/vector db enabled, and host names changed to "localhost"
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    use super::*;
+
+    const TEST_COLLECTION: &str = "SYS_UNIT_TEST_COLLECTION_14c1";
+
+    #[tokio::test]
+    async fn test_list_collections() {
+        let cm = ConnectionManager::new();
+        
+        let c = cm.vdb_client.as_ref().unwrap().list_collections().await;
+        assert!(c.is_ok(), "{}", c.err().unwrap());
+
+        log::info!("{}", c.unwrap().join(", "));
+    }
+
+    #[tokio::test]
+    async fn test_embed_file() {
+        let cm = ConnectionManager::new();
+
+        let test_file = PathBuf::from(".ignore/out.md");
+        let result = cm.embed_file(TEST_COLLECTION, &test_file.canonicalize().unwrap()).await;
+
+        assert!(result.is_ok(), "{}", result.err().unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_embed_files() {
+        let cm = ConnectionManager::new();
+
+        let test_files = vec![
+            PathBuf::from(".ignore/out.md").canonicalize().unwrap(),
+            PathBuf::from(".ignore/out2.md").canonicalize().unwrap(),
+        ];
+        let result = cm.embed_files(TEST_COLLECTION, test_files.iter().map(|path| path.as_path()).collect()).await;
+
+        assert!(result.is_ok(), "{}", result.err().unwrap());
+    }
+}

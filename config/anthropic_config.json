@@ -1,0 +1,9 @@
+{
+	"enable_anthropic": true,
+    "base_url": "https://api.anthropic.com/v1",
+    "anthropic_version": "2023-06-01",
+    "max_tokens": 4096,
+    "default_model": "claude-haiku-4-5-20251001",
+    "max_input_tpm": 30000,
+    "max_output_tpm": 10000
+}

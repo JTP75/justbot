@@ -1,0 +1,11 @@
+{
+    "enable_qdrant": false,
+    "host": "qdrant",
+    "rest_port": 6333,
+    "grpc_port": 6334,
+
+	"default_collection": "DEFAULT_COLLECTION",
+
+    "dimensionality": 512,
+    "default_search_limit": 10
+}

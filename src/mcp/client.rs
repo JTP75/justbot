@@ -195,28 +195,19 @@ mod tests {
     #[ctor::ctor]
     fn setup() {
         let _ = env_logger::builder().filter_level(log::LevelFilter::Debug).try_init();
-        let _ = fs::create_dir_all(PathBuf::from(TEST_OUTPUT_DIR));
         log::info!("Starting test server...");
 
-        let client = McpClient::new(
-            "npx",
-            &["-y", "@modelcontextprotocol/server-filesystem", TEST_OUTPUT_DIR],
-            None
-        ).unwrap();
+        // setup
 
-        *TEST_CLIENT.lock().unwrap() = Some(client);
-        
         log::info!("Test server started.");
     }
 
     #[ctor::dtor]
     fn cleanup() {
         log::info!("Stopping test server...");
-        if let Ok(mut server_guard) = TEST_CLIENT.lock() {
-            if let Some(mut client) = server_guard.take() {
-                let _ = client.kill();
-            }
-        }
+
+        // cleanup
+
         log::info!("Test server stopped.");
     }
 

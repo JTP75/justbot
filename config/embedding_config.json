@@ -1,0 +1,11 @@
+{
+	"allow_pdfs": true,
+
+    "use_voyage_embedding": false,
+    "embedding_url": "https://api.voyageai.com/v1/embeddings",
+    "embedding_model": "voyage-3-lite",
+
+    "use_local_embedding": false,
+    "host": "embedding-service",
+    "port": 8000
+}
