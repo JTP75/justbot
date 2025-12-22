@@ -8,6 +8,9 @@ pub mod json {
     pub const VECTORDB_CONFIG: &str = "vectordb_config.json";
     pub const EMBEDDING_CONFIG: &str = "embedding_config.json";
 
+    pub const MCP_SERVERS_CONFIG: &str = "mcp_servers.json";
+    
+    pub const MOTD_FILENAME: &str = "motd.json";
 }
 
 /// config keys
@@ -17,7 +20,6 @@ pub mod keys {
 
     pub const START_DIR: &str = "start_dir";
     pub const DEFAULT_NAME: &str = "default_name";
-    pub const MOTD_FILENAME: &str = "motd_filename";
     pub const CLIENT_HOST: &str = "client_host";
     pub const ENABLE_MCP: &str = "enable_mcp_servers";
     pub const ENABLE_CUSTOM_TOOLS: &str = "enable_custom_tools";

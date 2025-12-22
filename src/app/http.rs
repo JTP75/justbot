@@ -11,7 +11,7 @@ use derive_builder::Builder;
 
 use crate::{
     app::{connection_manager::ConnectionManager, tool_manager::ToolManager}, 
-    common::{config, config_const::{json::BOT_CONFIG, keys::{CLIENT_HOST, HOST, MOTD_FILENAME, PORT}}}, connection::{anthropic_client::{AnthropicToolDefinition, Message, MessagesResponse, ToolResultContentBlock}, local_embedding_client, voyage_client}
+    common::{config, config_const::{json::{BOT_CONFIG, MOTD_FILENAME}, keys::{CLIENT_HOST, HOST, PORT}}}, connection::{anthropic_client::{AnthropicToolDefinition, Message, MessagesResponse, ToolResultContentBlock}, local_embedding_client, voyage_client}
 };
 
 // lazy mutex for server state
@@ -26,10 +26,7 @@ pub static APP_STATE: Lazy<Mutex<AppState>> = Lazy::new(
     || Mutex::new(AppState { 
         collection_name: None,
         motd: {
-            let filename: String = crate::common::config
-                ::get_config(BOT_CONFIG, MOTD_FILENAME)
-                .expect("failed to get config");
-            let value = fs::read_to_string(config::PROJECT_DIRS.data_dir().join(filename));
+            let value = fs::read_to_string(config::PROJECT_DIRS.data_dir().join(MOTD_FILENAME));
             match value {
                 Ok(value) => serde_json::from_str(&value)
                     .unwrap_or((Local::now().date_naive(), None)),

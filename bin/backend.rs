@@ -5,7 +5,7 @@ use puetce::{
     app::{
         connection_manager::ConnectionManager, http::HttpServer, tool_manager::ToolManager
     }, 
-    common::{config, config_const::{json::BOT_CONFIG, keys::ENABLE_MCP}}, 
+    common::{config, config_const::{json::{BOT_CONFIG, MCP_SERVERS_CONFIG}, keys::ENABLE_MCP}}, 
     mcp::McpConfig
 };
 
@@ -58,7 +58,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if config::get_config(BOT_CONFIG, ENABLE_MCP).unwrap_or(false) {
         log::info!("Registering and Starting MCP servers... ");
 
-        let server_file = config::PROJECT_DIRS.config_dir().join("mcp_servers.json");
+        let server_file = config::PROJECT_DIRS.config_dir().join(MCP_SERVERS_CONFIG);
         let json = fs::read_to_string(server_file).unwrap();
         let mcp_config: McpConfig = serde_json::from_str(&json)?;
         for mcp_server in mcp_config.mcp_servers {

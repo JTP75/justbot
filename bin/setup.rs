@@ -1,110 +1,172 @@
-use std::fs;
-use directories::ProjectDirs;
+use std::{fs, path::Path};
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+use puetce::common::{config::PROJECT_DIRS, config_const::{json::MCP_SERVERS_CONFIG, prompts::{PROMPTS_DIR, SYSTEM_BASE, SYSTEM_TOOL}}};
+
+fn main() -> std::io::Result<()> {
     env_logger::Builder::from_env(
         env_logger::Env::default()
             .default_filter_or("info")
     ).init();
+
+
+    match verify_all() {
+        Ok(_) => {
+            log::info!("All config files already exist. Skipping setup");
+            return Ok(());
+        },
+        Err(_) => {
+            log::error!("Config file(s) missing. Entering setup");
+        }
+    }
+    
     log::info!("Beginning setup...");
 
-    let p_dirs = ProjectDirs::from("com", "The justbot Company", "rustbot")
-        .ok_or("Could not determine project directories")?;
-
-    // check and create each project directory
-
-    // create config directory if it doesn't exist
-    let config_dir = p_dirs.config_dir();
-    if !config_dir.exists() {
-        fs::create_dir_all(config_dir)?;
-        log::info!("Created config directory at {:?}", config_dir);
-    } else {
-        log::debug!("Config directory already exists at {:?}", config_dir);
+    // create base project dirs
+    //
+    if !PROJECT_DIRS.config_dir().exists() {
+        fs::create_dir_all(PROJECT_DIRS.config_dir())?;
+    }
+    if !PROJECT_DIRS.data_dir().exists() {
+        fs::create_dir_all(PROJECT_DIRS.data_dir())?;
+    }
+    if !PROJECT_DIRS.cache_dir().exists() {
+        fs::create_dir_all(PROJECT_DIRS.cache_dir())?;
     }
 
-    // create data directory if it doesn't exist
-    let data_dir = p_dirs.data_dir();
-    if !data_dir.exists() {
-        fs::create_dir_all(data_dir)?;
-        log::info!("Created data directory at {:?}", data_dir);
-    } else {
-        log::debug!("Data directory already exists at {:?}", data_dir);
+    // create project subdirs
+    //
+    if !PROJECT_DIRS.config_dir().join("auth").exists() {
+        fs::create_dir_all(PROJECT_DIRS.config_dir().join("auth"))?;
+    }
+    if !PROJECT_DIRS.data_dir().join("sessions").exists() {
+        fs::create_dir_all(PROJECT_DIRS.data_dir().join("sessions"))?;
     }
 
-    // create saves directory if it doesn't exist
-    let save_dir_owned = p_dirs.data_dir().join("sessions");
-    let save_dir = save_dir_owned.as_path();
-    if !save_dir.exists() {
-        fs::create_dir_all(save_dir)?;
-        log::info!("Created save directory at {:?}", save_dir);
-    } else {
-        log::debug!("Save directory already exists at {:?}", save_dir);
-    }
+    // copy config
+    //
+    copy_dir_recursive(Path::new("config"), PROJECT_DIRS.config_dir())?;
 
-    // copy each config file to config_dir if they don't exist
-
-    // copy bot_config.json
-    if !config_dir.join("bot_config.json").exists() {
-        fs::copy("config_files/bot_config.json", config_dir.join("bot_config.json"))?;
-        log::info!("Copied bot_config.json to {:?}", config_dir);
-    } else {
-        log::debug!("bot_config.json already exists, skipping copy.");
-    }
-
-    // copy vectordb_config.json
-    if !config_dir.join("vectordb_config.json").exists() {
-        fs::copy("config_files/vectordb_config.json", config_dir.join("vectordb_config.json"))?;
-        log::info!("Copied vectordb_config.json to {:?}", config_dir);
-    } else {
-        log::debug!("vectordb_config.json already exists, skipping copy.");
-    }
-
-    // copy anthropic_config.json
-    if !config_dir.join("anthropic_config.json").exists() {
-        fs::copy("config_files/anthropic_config.json", config_dir.join("anthropic_config.json"))?;
-        log::info!("Copied anthropic_config.json to {:?}", config_dir);
-    } else {
-        log::debug!("anthropic_config.json already exists, skipping copy.");
-    }
-
-    // copy prompts.json
-    if !config_dir.join("prompts.json").exists() {
-        fs::copy("config_files/prompts.json", config_dir.join("prompts.json"))?;
-        log::info!("Copied prompts.json to {:?}", config_dir);
-    } else {
-        log::debug!("prompts.json already exists, skipping copy.");
-    }
-
-    // copy mcp_servers.json
-    if !config_dir.join("mcp_servers.json").exists() {
-        fs::copy("config_files/mcp_servers.json", config_dir.join("mcp_servers.json"))?;
-        log::info!("Copied mcp_servers.json to {:?}", config_dir);
-    } else {
-        log::debug!("mcp_servers.json already exists, skipping copy.");
-    }
-
-    // copy docker-compose.yml
-    if !config_dir.join("docker-compose.yml").exists() {
-        fs::copy("config_files/docker-compose.yml", config_dir.join("docker-compose.yml"))?;
-        log::info!("Copied docker-compose.yml to {:?}", config_dir);
-    } else {
-        log::debug!("docker-compose.yml already exists, skipping copy.");
-    }
-
-    // generate a .env template if it doesn't exist
-    let env_path = config_dir.join(".env");
-    if !env_path.exists() {
-        fs::write(
-            &env_path,
-            "ANTHROPIC_API_KEY=
-VOYAGE_API_KEY="
+    // copy dotenv template to .env
+    //
+    if !PROJECT_DIRS.config_dir().join(".env").exists() {
+        log::info!(".env file does not exist. Creating from template file");
+        log::warn!(".env file does not contain the necessary API key(s)");
+        fs::copy(
+            PROJECT_DIRS.config_dir().join("dotenv_template"),
+            PROJECT_DIRS.config_dir().join(".env"),
         )?;
-        log::info!("Created .env template at {:?}", env_path);
-        log::warn!("Make sure to add your API keys to the .env file: {:?} before running the bot.", env_path);
-    } else {
-        log::debug!(".env file already exists, skipping creation.");
     }
 
-    log::info!("Setup finished successfully.");
+    log::info!("Setup finished. Verifying...");
+
+    match verify_all() {
+        Ok(_) => {
+            log::info!("All files and directories created. Setup complete");
+            Ok(())
+        },
+        Err(e) => {
+            log::error!("Verification failed: {e}");
+            Err(std::io::Error::new(std::io::ErrorKind::Other, format!("{e}")))
+        }
+    }    
+}
+
+/// recursively copy a directory from `src` to `dst` without replacing existing files
+/// 
+/// 
+fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
+    fs::create_dir_all(dst)?;
+
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let path = entry.path();
+        let file_name = entry.file_name();
+        let dest_path = dst.join(&file_name);
+
+        if path.is_dir() {
+            copy_dir_recursive(&path, &dest_path)?;
+        } else {
+            if !dest_path.exists() {
+                fs::copy(&path, &dest_path)?;
+            }
+        }
+    }
+
     Ok(())
+}
+
+/// verify existence all config/cache/data files and directories
+/// 
+/// 
+fn verify_all() -> Result<(), Box<dyn std::error::Error>> {
+    use puetce::common::config_const::json::{
+        BOT_CONFIG, ANTHROPIC_CONFIG, VECTORDB_CONFIG, EMBEDDING_CONFIG
+    };
+
+    fn exists_err(dir: &Path, msg: &str) -> Result<(), Box<dyn std::error::Error>> {
+        dir.exists().then_some(0).ok_or(msg)?;
+        Ok(())
+    }
+
+    // config dir
+    exists_err(PROJECT_DIRS.config_dir(), 
+        format!("Config dir {:?} doesn't exist",
+        PROJECT_DIRS.config_dir()).as_str())?;
+
+    // config dir config files
+    exists_err(&PROJECT_DIRS.config_dir().join(BOT_CONFIG), 
+        format!("{BOT_CONFIG} file doesn't exist").as_str())?;
+    exists_err(&PROJECT_DIRS.config_dir().join(ANTHROPIC_CONFIG), 
+        format!("{ANTHROPIC_CONFIG} file doesn't exist").as_str())?;
+    exists_err(&PROJECT_DIRS.config_dir().join(VECTORDB_CONFIG), 
+        format!("{VECTORDB_CONFIG} file doesn't exist").as_str())?;
+    exists_err(&PROJECT_DIRS.config_dir().join(EMBEDDING_CONFIG), 
+        format!("{EMBEDDING_CONFIG} file doesn't exist").as_str())?;
+    exists_err(&PROJECT_DIRS.config_dir().join(MCP_SERVERS_CONFIG), 
+        format!("{MCP_SERVERS_CONFIG} file doesn't exist").as_str())?;
+    
+    // config dir .env file
+    exists_err(&PROJECT_DIRS.config_dir().join(".env"), 
+        format!(".env file doesn't exist").as_str())?;    
+
+    // config dir prompts dir
+    exists_err(&PROJECT_DIRS.config_dir().join(PROMPTS_DIR), 
+        format!("{PROMPTS_DIR} dir doesn't exist").as_str())?;
+
+    // config dir prompts dir prompt txt files
+    exists_err(&PROJECT_DIRS.config_dir().join(PROMPTS_DIR).join(SYSTEM_BASE), 
+        format!("{SYSTEM_BASE} file doesn't exist").as_str())?;
+    exists_err(&PROJECT_DIRS.config_dir().join(PROMPTS_DIR).join(SYSTEM_TOOL), 
+        format!("{SYSTEM_TOOL} file doesn't exist").as_str())?;
+
+    // cache dir
+    exists_err(PROJECT_DIRS.cache_dir(), 
+        format!("Cache dir {:?} doesn't exist",
+        PROJECT_DIRS.cache_dir()).as_str())?;
+
+    // data dir
+    exists_err(PROJECT_DIRS.data_dir(), 
+        format!("Data dir {:?} doesn't exist",
+        PROJECT_DIRS.data_dir()).as_str())?;
+    
+    // data dir motd file
+    exists_err(&PROJECT_DIRS.config_dir().join(BOT_CONFIG), 
+        format!("{BOT_CONFIG} file doesn't exist").as_str())?;
+
+    // data dir sessions dir
+    exists_err(&PROJECT_DIRS.data_dir().join("sessions"), 
+        format!("sessions dir doesn't exist").as_str())?;
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::verify_all;
+
+    #[test]
+    fn test_verify_config_files() {
+        let result = verify_all();
+        assert!(result.is_ok(), "Verification failed: {}", result.err().unwrap());
+    }
 }

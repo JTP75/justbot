@@ -7,8 +7,8 @@ use crate::app::http::HttpClient;
 use crate::app::session::SessionManager;
 use crate::commands::{self, Command};
 use crate::common::config;
-use crate::common::config_const::json::{ANTHROPIC_CONFIG, BOT_CONFIG};
-use crate::common::config_const::keys::{DEFAULT_MODEL, MOTD_FILENAME};
+use crate::common::config_const::json::{ANTHROPIC_CONFIG, MOTD_FILENAME};
+use crate::common::config_const::keys::DEFAULT_MODEL;
 use crate::connection::anthropic_client::{AnthropicToolDefinition, ContentBlock, Message, MessagesResponse, Role, Source, ToolResultContentBlock};
 
 #[derive(Debug)]
@@ -107,10 +107,7 @@ impl PuetceApp {
     /// let motd = bot.get_motd();
     /// ```
     pub fn get_motd(&self) -> (chrono::NaiveDate, Option<String>) {
-        let filename: String = crate::common::config
-            ::get_config(BOT_CONFIG, MOTD_FILENAME)
-            .expect("failed to get config");
-        let value = fs::read_to_string(config::PROJECT_DIRS.data_dir().join(filename));
+        let value = fs::read_to_string(config::PROJECT_DIRS.data_dir().join(MOTD_FILENAME));
         match value {
             Ok(value) => serde_json::from_str(&value)
                 .unwrap_or((Local::now().date_naive(), None)),

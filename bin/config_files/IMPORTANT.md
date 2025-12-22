@@ -1,1 +1,0 @@
-These are initliazation copies of the config files. Modifying these will not effect the application's behavior

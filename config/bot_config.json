@@ -1,7 +1,6 @@
 {
 	"start_dir": "/home/pacel",
 	"default_name": "Puetce",
-	"motd_filename": "motd.json",
 
 	"host": "0.0.0.0",
 	"port": 8081,

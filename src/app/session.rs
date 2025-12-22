@@ -2,8 +2,7 @@ use std::{ffi::OsStr, fs, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use crate::common::config_const::json::BOT_CONFIG;
-use crate::common::config_const::keys::MOTD_FILENAME;
+use crate::common::config_const::json::MOTD_FILENAME;
 use crate::common::config_const::prompts::SYSTEM_BASE;
 use crate::{common::config, app::puetce::PuetceApp};
 use crate::connection::anthropic_client::{Message, ContentBlock, Role};
@@ -110,15 +109,11 @@ impl SessionManager {
         if !self.data_dir.exists() { fs::create_dir_all(&self.data_dir)?; }
 
         let json = serde_json::to_string_pretty(&bot.get_motd())?;
-        let filename: String = crate::common::config
-            ::get_config(BOT_CONFIG, MOTD_FILENAME)?;
-        Ok(fs::write(&self.data_dir.join(filename), json)?)
+        Ok(fs::write(&self.data_dir.join(MOTD_FILENAME), json)?)
     }
 
     pub fn load_motd(&self, _bot: &mut PuetceApp) -> Result<(),Box<dyn std::error::Error>> {
-        let filename: String = crate::common::config
-            ::get_config(BOT_CONFIG, MOTD_FILENAME)?;
-        let json = fs::read_to_string(&self.data_dir.join(filename))?;
+        let json = fs::read_to_string(&self.data_dir.join(MOTD_FILENAME))?;
         let _motd: (chrono::NaiveDate, Option<String>) = serde_json::from_str(&json)?;
         Ok(())
     }
