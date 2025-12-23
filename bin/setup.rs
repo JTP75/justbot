@@ -1,6 +1,6 @@
 use std::{fs, path::Path};
 
-use puetce::common::{config::PROJECT_DIRS, config_const::{json::MCP_SERVERS_CONFIG, prompts::{PROMPTS_DIR, SYSTEM_BASE, SYSTEM_TOOL}}};
+use puetce::common::{config::PROJECT_DIRS, config_const::{json::{MCP_SERVERS_CONFIG}, prompts::{PROMPTS_DIR, SYSTEM_BASE, SYSTEM_TOOL}}};
 
 fn main() -> std::io::Result<()> {
     env_logger::Builder::from_env(
@@ -148,10 +148,6 @@ fn verify_all() -> Result<(), Box<dyn std::error::Error>> {
     exists_err(PROJECT_DIRS.data_dir(), 
         format!("Data dir {:?} doesn't exist",
         PROJECT_DIRS.data_dir()).as_str())?;
-    
-    // data dir motd file
-    exists_err(&PROJECT_DIRS.config_dir().join(BOT_CONFIG), 
-        format!("{BOT_CONFIG} file doesn't exist").as_str())?;
 
     // data dir sessions dir
     exists_err(&PROJECT_DIRS.data_dir().join("sessions"), 

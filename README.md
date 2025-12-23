@@ -8,6 +8,7 @@ A modern and extensible AI agent implemented in Rust with a command line interfa
 - **🛜 Configurable MCP Servers** - Configurable MCP servers are registered and launched at runtime
 - **🔍 RAG Pipeline** - Semantic search using Qdrant vector database and Voyage AI embeddings
 - **📅 MOTD Support** - Daily message of the day display for emotional support (and fun)
+- **📦 Docker Backend** - Backend server hosted inside docker container for compatibility and easy setup
 - **📂 Session Management** - Persistent conversation history with save/load capabilities
 - **🗨️ Extensible Commands** - Modular command system with automatic registration
 - **🛠️ Extensible Custom Tools** - Modular custom tool system with automatic registration
@@ -28,25 +29,24 @@ Project modules are documented in their respective README files
 
 ## Installation
 
-**(EVERYTHING IN THIS SECTION IS NOT UP TO DATE)**
-
 ### Prerequisites
 
 #### Required
 - Current version is only tested on WSL2 Ubuntu
 - Rust 1.70+ (2024 edition)
-- Docker and docker-compose (for Qdrant vector database service)
-  - [Docker Desktop](https://www.docker.com/products/docker-desktop) (includes docker-compose)
-- API keys for:
-  - [Anthropic Claude API Key](https://console.anthropic.com/)
-  - [Voyage AI API Key](https://www.voyageai.com/)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop)
+- [Anthropic API Key](https://console.anthropic.com/)
 
 #### Optional
-- Node.js (for running MCP servers)
-  - [Node.js](https://nodejs.org)
-- `poppler-utils` (for embedding PDFs)
+- For RAG Capabilities:
+  - Needs either Voyage or local embedding model deployment via HTTP server
+    - [Voyage AI API Key](https://www.voyageai.com/)
+    - **TODO** link for local text embedding deployment
+  - Qdrant vector database
+    - Locally installed \& deployed using Docker (handled automatically)
+  
 
-### Setup
+### First Time Setup
 
 ### 1. Clone the Repository
 
@@ -65,119 +65,91 @@ cargo run --bin setup
 
 This setup script will:
 - Create configuration directory at:
-  - **Linux/macOS**: `~/.config/rustbot/`
+  - **Linux**: `$HOME/.config/rustbot/`
+  - **macOS**: `$HOME/Library/Application Support/com.puetceco.rustbot/`
   - **Windows**: `%APPDATA%\puetceco\rustbot\config\`
 - Create data directory at:
-  - **Linux/macOS**: `~/.local/share/rustbot/`
+  - **Linux**: `$HOME/.local/share/rustbot/`
+  - **macOS**: `$HOME/Library/Application Support/com.puetceco.rustbot/`
   - **Windows**: `%APPDATA%\puetceco\rustbot\data\`
-- Create sessions subdirectory for conversation persistence
-- Copy default configuration files:
-  - `bot_config.json`
-  - `vectordb_config.json` (Qdrant settings)
-  - `anthropic_config.json`
-  - `prompts.json`
-  - `docker-compose.yml`
-- Generate a `.env` template file
+- Create cache directory at:
+  - **Linux**: `$HOME/.cache/rustbot`
+  - **macOS**: `$HOME/Library/Caches/com.puetceco.rustbot/`
+  - **Windows**: `%APPDATA%\puetceco\rustbot\cache\`
+- Create necessary storage subdirectories
+- Copy default configuration and environment files to correct locations:
+  - [bot_config.json](config/bot_config.json)
+  - [anthropic_config.json](config/anthropic_config.json)
+  - [vectordb_config.json](config/vectordb_config.json)
+  - [embedding_config.json](config/embedding_config.json)
+  - [mcp_servers.json](config/mcp_servers.json)
+  - [dotenv_template](config/dotenv_template)
 
-### 3. Configure API Keys
 
-After running setup, edit the `.env` file created in your config directory:
+### 3. Configure API Key(s)
 
-Add your API keys:
+After running setup, edit the `.env` file created in your config directory (according to the [template](config/dotenv_template)). The Anthropic API key is always mandatory and the Voyage key is only needed you want to set up the RAG pipeline *without* a local embedding model.
+
 ```env
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
-VOYAGE_API_KEY=your_voyage_api_key_here
+ANTHROPIC_API_KEY=INSERT_REQUIRED_ANTHROPIC_KEY_HERE
+VOYAGE_API_KEY=OPTIONAL_VOYAGE_KEY
 ```
 
-### 4. Configure Bot Settings (Optional)
+### 4. Edit Configurations 
 
-You can customize the bot's behavior by editing the JSON configuration files in your config directory:
+By default, only minimal features are enabled, including:
 
-**`bot_config.json`** - General bot settings:
-```json
-{
-  "default_name": "rustbot",
-  "default_collection": "rustbot_memory",
-  "motd_filename": "motd.json"
-}
-```
+- Anthropic API Integration
+- Custom tools (get/set MOTD, greeting)
 
-**`anthropic_config.json`** - Claude model and Anthropic settings:
-```json
-{
-  "default_model": "claude-3-opus-20240229",
-  "max_tokens": 4096
-}
-```
+#### RAG Pipeline Setup
 
-**`vectordb_config.json`** - Qdrant database and Voyage AI settings:
-```json
-{
-  "dimensionality": 512,
-  "default_search_limit": 5,
+1. Set `use_voyage_embedding` to `true` in [embedding_config.json](config/embedding_config.json)
+    - Alternatively, set up local embedding model (TODO)
+2. Set `enable_qdrant` to `true` in [vectordb_config.json](config/vectordb_config.json)
+3. Copy new config files to config directory (overwrite)
 
-  "embedding_url": "https://api.voyageai.com/v1/embeddings",
-  "embedding_model": "voyage-3-lite"
-}
-```
+#### MCP Servers
 
-**`prompts.json`** - Prompts used for generation tasks:
-```json
-{
-  "generate_topic": "What is the topic of this conversation, in five words or less? Write your response with as few words as possible. Response with these five or less words only.",
-  "motd": "Write a creative, one-sentence MOTD. It can be related to news/events, or just a friendly message. Respond with only the message."
-}
-```
+1. Set `enable_mcp_servers` to `true` in [bot_config.json](config/bot_config.json)
+2. Add MCP servers to [mcp_servers.json](config/bot_config.json)
+    - [MCP Configuration Instructions](src/mcp/README.md#configuration)
+3. Copy new config files to config directory (overwrite)
 
-### 5. Install PDF-to-Text Util (Optional)
+### 5. Build/Install
 
-**This part highly unstable and incomplete.**
-
-The current implementation relies on the pdftotext command and will certainly not work outside Linux.
-
+Frontend client
 ```bash
-sudo apt install poppler-utils
+cargo install --path . --bin puetce-client
 ```
 
-This allows the `store` command to work for PDF files.
-
-### 6. Build/Install the Project
-
-Build the project
+Backend server
 ```bash
-cargo build --release
-```
-
-Install the project
-```bash
-cargo install --path .
+docker-compose build
 ```
 
 ## Usage
 
 ### Starting Puetce
 
-From installation dir:
+Start backend server:
 ```bash
-cargo run --release
+docker-compose up -d
 ```
 
-Or use the compiled binary:
+This handles:
+1. Starting the Qdrant vector database service
+2. Starting each configured MCP server
+3. Starting the backend server
+
+Start frontend client instance:
 ```bash
-./target/release/puetce
+puetce-client
 ```
 
-If installed by cargo, run anywhere:
-```bash
-puetce
-```
-
-When launched, Puetce will:
-1. Start the Qdrant vector database service via docker-compose
-2. Start each configured MCP server
-3. Initialize the bot and session manager
-4. Display the message of the day
-5. Begin the CLI
+This handles:
+1. Initializing the app and session manager
+2. Starting the CLI
 
 ### Accessing the Qdrant VectorDB
 
@@ -243,6 +215,7 @@ The `commands` and `tools` modules were designed with extensibility in mind.
 - `tokio` - Asynchronous runtime with full feature set
 - `serde`/`serde_json` - Serialization and JSON support
 - `reqwest` - HTTP client for API calls
+- `axum` - HTTP server for backend
 - `qdrant-client` - Vector database operations
 - `yup-oauth2` - OAuth2 authentication for Google APIs
 - `chrono` - Date and time handling
@@ -262,7 +235,6 @@ For versions and features, see [Cargo.toml](Cargo.toml)
 
 Puetce uses `Result<T, Box<dyn std::error::Error>>` throughout for comprehensive error handling. Errors are displayed with color-coded output:
 - 🟡 Yellow - User prompts
-- 🔵 Blue - Startup/shutdown messages
 - 🟢 Green - Successful responses
 - 🔴 Red - Error messages
 
