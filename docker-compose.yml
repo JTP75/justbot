@@ -4,6 +4,9 @@ services:
   qdrant:
     image: qdrant/qdrant:latest
     container_name: qdrant
+    profiles:
+      - rag
+      - localrag
     ports:
       - "6333:6333"
       - "6334:6334"
@@ -21,6 +24,8 @@ services:
     build:
       context: ~/misc/pytorch/embedding-service
       dockerfile: Dockerfile
+    profiles:
+    - localrag
     ports:
       - "8000:8000"
     environment:
@@ -56,9 +61,6 @@ services:
       - ${HOME}/.local/share/rustbot:/root/.local/share/rustbot
       - ${HOME}/.cache/rustbot:/root/.cache/rustbot
       - /home:/home
-    depends_on:
-      - qdrant
-      - embedding-service
     healthcheck:
       test: ["CMD", "curl", "http://127.0.0.1:8081/health?endpoint=health&data=''"]
       interval: 10s

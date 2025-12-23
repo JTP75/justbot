@@ -85,6 +85,20 @@ This setup script will:
   - [mcp_servers.json](config/mcp_servers.json)
   - [dotenv_template](config/dotenv_template)
 
+**NOTE**: The docker-compose.yml is configured for Linux by default. If running on a different platform, you will need to change the backend volume mappings appropriately.
+
+For macOS:
+
+```yml
+services:
+  backend:
+    # ...
+    volumes:
+      - ${HOME}/Library/Application Support/com.puetceco.rustbot:/root/.config/rustbot
+      - ${HOME}/Library/Application Support/com.puetceco.rustbot:/root/.local/share/rustbot
+      - ${HOME}/Library/Caches/com.puetceco.rustbot:/root/.cache/rustbot
+    # ...
+```
 
 ### 3. Configure API Key(s)
 
@@ -108,6 +122,16 @@ By default, only minimal features are enabled, including:
     - Alternatively, set up local embedding model (TODO)
 2. Set `enable_qdrant` to `true` in [vectordb_config.json](config/vectordb_config.json)
 3. Copy new config files to config directory (overwrite)
+
+**NOTE**: You will need to run docker compose with the "rag" profile to launch qdrant. Additionally, if you setup local embedding, you will need to run with "localrag" profile:
+
+```bash
+docker compose --profile rag up -d
+```
+
+```bash
+docker compose --profile localrag up -d
+```
 
 #### MCP Servers
 
@@ -230,13 +254,6 @@ The `commands` and `tools` modules were designed with extensibility in mind.
 - `ctor` - Constructor functions
 
 For versions and features, see [Cargo.toml](Cargo.toml)
-
-## Message Indicators
-
-Puetce uses `Result<T, Box<dyn std::error::Error>>` throughout for comprehensive error handling. Errors are displayed with color-coded output:
-- 🟡 Yellow - User prompts
-- 🟢 Green - Successful responses
-- 🔴 Red - Error messages
 
 ## License
 
