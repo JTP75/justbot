@@ -45,9 +45,6 @@ Project modules are documented in their respective README files
   - Qdrant vector database
     - Locally installed \& deployed using Docker (handled automatically)
   
-
-### First Time Setup
-
 ### 1. Clone the Repository
 
 ```
@@ -158,13 +155,15 @@ docker-compose build
 
 Start backend server:
 ```bash
-docker-compose up -d
+docker-compose up -d                      # no rag pipeline
+docker-compose --profile rag up -d        # rag pipeline with voyage embedding
+docker-compose --profile localrag up -d   # rag pipeline with local embedding model (requires separate installation)
 ```
 
 This handles:
-1. Starting the Qdrant vector database service
-2. Starting each configured MCP server
-3. Starting the backend server
+1. Starting each configured MCP server
+2. Hosting the Qdrant vector database service
+3. Hosting the backend server
 
 Start frontend client instance:
 ```bash
@@ -177,32 +176,31 @@ This handles:
 
 ### Accessing the Qdrant VectorDB
 
-Once the bot is running you can open the [Qdrant Dashboard](http://localhost:6333/dashboard) in your browser on localhost. This allows access to existing collections, tutorials, and visualization tools.
+If the `rag` profile is enabled, you can open the [Qdrant Dashboard](http://localhost:6333/dashboard) in your browser on localhost. This allows access to existing collections, tutorials, and visualization tools.
 
 ### Basic Interaction
 
 ```
->> Hi, I'm puetce! Type 'help' to see what I can do.
->> Today is Monday, January 1, 2024.
->> Welcome to Puetce!
-<< hello
->> Hello there! My name is puetce.
-<< help
->> Available commands are:
-        load                    aliases=()
-        wexit                   aliases=(wq)
-        hello                   aliases=()
-        get-collection          aliases=(getc)
-        whereami                aliases=()
-        exit                    aliases=(q | quit)
-        store                   aliases=()
-        message                 aliases=(msg)
-        set-collection          aliases=(setc)
-        save                    aliases=(w)
-        message-tools           aliases=(msgt)
-        ...
-<< help load
->> load
+Today is Monday, January 1, 2024.
+Here is todays MOTD!
+> hello
+Hello there! My name is puetce.
+> help
+Available commands are:
+     load                    aliases=()
+     wexit                   aliases=(wq)
+     hello                   aliases=()
+     get-collection          aliases=(getc)
+     whereami                aliases=()
+     exit                    aliases=(q | quit)
+     store                   aliases=()
+     message                 aliases=(msg)
+     set-collection          aliases=(setc)
+     save                    aliases=(w)
+     message-tools           aliases=(msgt)
+     ...
+> help load
+load
 
 DESC
 Load a session file over the current session
@@ -211,9 +209,9 @@ HELP
 Usage: load <filename>
 Filename must be specified
 
-<< whats on my agenda for today?
->> 25 hours of coding
-<<
+> msgt whats on my agenda for today?
+25 hours of coding
+>
 ```
 
 ### Conversation Sessions
