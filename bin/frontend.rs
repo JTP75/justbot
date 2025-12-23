@@ -31,16 +31,15 @@ fn main() {
     print_big_banner_puetce();
     
     // print initital message, todays date, and motd
-    println!("\x1b[1;32m>>\x1b[0m Hi, I'm \x1b[0;33mPuetce\x1b[0m! Type 'help' to see what I can do.");
     match sm.load_motd(&mut bot) {
         Ok(_) => {
             handle_bot_command(&mut sm, &mut bot, "motd");
-            println!("\x1b[1;32m>>\x1b[0m Today is {}.\n\x1b[1;32m>>\x1b[0m {}", 
+            println!("Today is {}.\n{}", 
                 bot.get_motd().0.format("%A, %B %-d, %Y"), 
-                bot.get_motd().1.unwrap_or("No motd today because justin cant code :(".into())
+                bot.get_motd().1.unwrap()
             )
         },
-        Err(e) => println!("\x1b[1;31m>>\x1b[0m Failed to load motd on startup: {}", e)
+        Err(e) => println!("\r[\x1b[1;31mERROR\x1b[0m] Failed to load motd on startup: {}", e)
     }
 
     // set up rustyline
@@ -58,7 +57,7 @@ fn main() {
     // cli loop
     let mut running = true;
     while running {
-        match rl.readline("\x1b[1;33m<<\x1b[0m ") {
+        match rl.readline("> ") {
             Ok(line) => {
                 let ssf = Arc::new(AtomicBool::new(false));
                 let ssf_copy = ssf.clone();
@@ -68,7 +67,7 @@ fn main() {
                 let tokens: Vec<_> = line.split_whitespace().collect();
                 let first = match tokens.len() { 0 => "", _ => tokens[0] };
                 match first {
-                    "exit" | "wexit" | "q" | "wq" => {
+                    "exit" | "wexit" | "q" | "wq" | "quit" => {
                         let response = handle_bot_command(&mut sm, &mut bot, &line);
 
                         ssf.store(true, Ordering::Relaxed);
@@ -120,9 +119,9 @@ fn main() {
 /// callback for handling bot commands
 fn handle_bot_command(sm: &mut SessionManager, bot: &mut PuetceApp, input: &str) -> Option<String> {
     match bot.handle_command(sm, input) {
-        Ok(Some(response)) => Some(format!("\x1b[1;32m>>\x1b[0m {}", response)),
+        Ok(Some(response)) => Some(format!("{}", response)),
         Ok(None) => None,
-        Err(e) => Some(format!("\x1b[1;31m>>\x1b[0m {}", e))
+        Err(e) => Some(format!("\r[\x1b[1;31mERROR\x1b[0m] {}", e))
     }
 }
 

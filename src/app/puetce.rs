@@ -260,7 +260,7 @@ impl PuetceApp {
                 log::info!("Executing tool '{name}': {input}");
 
                 // todo we probably dont want a print statement here
-                println!("\r\x1b[1;34m>>\x1b[0m Executing tool: '{name}'");
+                println!("\r[\x1b[1;34mTOOL\x1b[0m] Executing: '{name}'");
 
                 let tool_result_block = match self.http_client.execute_tool(name, input) {
                     Ok(result_blocks) => {
