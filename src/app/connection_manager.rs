@@ -1,6 +1,16 @@
 use std::{fs, path::Path};
 
-use crate::{common::{config, config_const::{json::{ANTHROPIC_CONFIG, EMBEDDING_CONFIG, VECTORDB_CONFIG}, keys::{DEFAULT_SEARCH_LIMIT, ENABLE_ANTHROPIC, ENABLE_LOCAL, ENABLE_QDRANT, ENABLE_VOYAGE}}}, connection::{EmbeddingClient, anthropic_client::AnthropicClient, local_embedding_client::LocalClient, qdrant_client::QdrantClient, voyage_client::VoyageClient}};
+use crate::{
+    common::{
+        config, config_const::{
+            json::{ANTHROPIC_CONFIG, EMBEDDING_CONFIG, VECTORDB_CONFIG}, 
+            keys::{DEFAULT_SEARCH_LIMIT, ENABLE_ANTHROPIC, ENABLE_LOCAL, ENABLE_QDRANT, ENABLE_VOYAGE}
+        }
+    }, connection::{
+        EmbeddingClient, anthropic_client::AnthropicClient, local_embedding_client::LocalClient, 
+        qdrant_client::QdrantClient, voyage_client::VoyageClient
+    }
+};
 
 #[derive(Debug)]
 pub struct ConnectionManager {
@@ -66,43 +76,6 @@ impl ConnectionManager {
 
     // routines
     
-    /// Gets the embedding for a file and stores to the Vector DB
-    /// 
-    /// - assumes `file_path` is valid
-    /// - attempts to convert pdfs to text
-    pub async fn embed_file(&self, collection_name: &str, file_path: &Path) 
-    -> Result<(), Box<dyn std::error::Error>> {
-        if self.embedding_client.is_some() && self.vdb_client.is_some() {
-            let path_str = match file_path.to_str() {
-                Some(s) => s,
-                None => { return Err(format!("Error converting path <{}> to &str", file_path.display()).into()) }
-            };
-            let content = match file_path.extension().and_then(|ext| ext.to_str())  {
-                Some("pdf") => crate::common::pdf
-                    ::extract_pdf_text(&file_path)?,
-                _ => fs::read_to_string(&file_path)
-                    .map_err(|_| format!("Failed to read file {}", file_path.display()))?
-            };
-
-            // embed content and path
-            //      fixme theres a better way to group embeddings...
-            let text_data = format!("{{\"file_path\": \"{}\", \"content\": \"{}\"}}", path_str, content);
-            let embedding = self.embedding_client.as_ref().unwrap().get_embedding(&text_data, "document").await?;
-
-            // store content to vdb
-            // (make a new collection if it doesnt exist)
-            if !self.vdb_client.as_ref().unwrap().list_collections().await?.contains(&collection_name.to_string()) {
-                self.vdb_client.as_ref().unwrap().add_collection(collection_name).await?;
-            }
-            self.vdb_client.as_ref().unwrap().insert_to_collection(collection_name, embedding, path_str, &content).await?;
-
-            Ok(())
-        } else {
-            log::error!("Cannot embed file; vdb and/or embedding is disabled");
-            Err("Cannot embed file; vdb and/or embedding is disabled".into())
-        }
-    }
-
     /// Gets the embedding for multiple files and stores to the Vector DB
     /// 
     /// - assumes each path in `file_path` is valid
@@ -143,7 +116,7 @@ impl ConnectionManager {
             if !self.vdb_client.as_ref().unwrap().list_collections().await?.contains(&collection_name.to_string()) {
                 self.vdb_client.as_ref().unwrap().add_collection(collection_name).await?;
             }
-            self.vdb_client.as_ref().unwrap().insert_multiple_to_collection(
+            self.vdb_client.as_ref().unwrap().insert_to_collection(
                 collection_name, 
                 embeddings, 
                 file_paths, 
@@ -167,7 +140,8 @@ impl ConnectionManager {
         if self.embedding_client.is_some() && self.vdb_client.is_some() {
 
             // vectorize query
-            let qvec = self.embedding_client.as_ref().unwrap().get_embedding(query, "query").await?;
+            let qvec = self.embedding_client.as_ref().unwrap().get_embeddings(vec![query], "query").await?;
+            let qvec = qvec.first().unwrap().clone();
 
             let config_limit = crate::common::config
                 ::get_config(VECTORDB_CONFIG, DEFAULT_SEARCH_LIMIT)?;
@@ -218,16 +192,6 @@ mod tests {
         assert!(c.is_ok(), "{}", c.err().unwrap());
 
         log::info!("{}", c.unwrap().join(", "));
-    }
-
-    #[tokio::test]
-    async fn test_embed_file() {
-        let cm = ConnectionManager::new();
-
-        let test_file = PathBuf::from(".ignore/out.md");
-        let result = cm.embed_file(TEST_COLLECTION, &test_file.canonicalize().unwrap()).await;
-
-        assert!(result.is_ok(), "{}", result.err().unwrap());
     }
 
     #[tokio::test]

@@ -88,28 +88,7 @@ impl QdrantClient {
         Err("All list collections attempts failed.".into())
     }
 
-    /// Insert one vector to a collection in the Vector DB
     pub async fn insert_to_collection(&self, collection_name: &str, 
-        vector: Vec<f32>, file_path: &str, content: &str)
-    -> Result<u64, Box<dyn std::error::Error>> {
-        let payload: Payload = serde_json::json!({
-            "file_path": file_path,
-            "content": content,
-        }).try_into()?;
-
-        let mut hasher = DefaultHasher::new();
-        hasher.write(file_path.as_bytes());
-
-        let id = hasher.finish();
-        let point = PointStruct::new(id.clone(), vector, payload);
-        let req = UpsertPointsBuilder::new(collection_name, vec![point]);
-        
-        self.client.upsert_points(req).await?;
-        
-        Ok(id)
-    }
-
-    pub async fn insert_multiple_to_collection(&self, collection_name: &str, 
         vectors: Vec<Vec<f32>>, file_paths: Vec<&str>, contents: Vec<&str>)
     -> Result<Vec<u64>, Box<dyn std::error::Error>> {
         
@@ -161,7 +140,6 @@ impl QdrantClient {
 #[cfg(test)]
 mod test {
     use super::*;
-    use rand::Rng;
 
     const TEST_COLLECTION_NAME: &str = "this_is_a_test_delete_me";
     const DIM: usize = 1536;
@@ -204,7 +182,7 @@ mod test {
 
         // insert to collection
         let result = client.insert_to_collection(collection_name, 
-            vec![0.72; DIM], "project/README.md", "# README hello").await;
+            vec![vec![0.72; DIM]], vec!["project/README.md"], vec!["# README hello"]).await;
         match result {
             Ok(_) => println!("Inserted to collection: {}", collection_name),
             Err(e) => eprintln!("Failed to insert to collection: {:?}", e),
@@ -219,20 +197,5 @@ mod test {
         assert!(result.is_ok());
 
         // make sure new vector is found
-    }
-
-    #[tokio::test]
-    async fn test_insert_many() {
-        let client = QdrantClient::new().unwrap();
-        let collection_name = TEST_COLLECTION_NAME;
-
-        let mut rng = rand::rng();
-
-        for _ in 0..500 {
-            let vec: Vec<f32> = (0..DIM).map(|_| rng.random_range(-1.0..1.0)).collect();
-            let result = client.insert_to_collection(collection_name, 
-                vec, "project/README.md", "# README hello").await;
-            assert!(result.is_ok());
-        }
     }
 }

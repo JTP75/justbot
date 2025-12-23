@@ -6,7 +6,10 @@ pub struct RagTool;
 
 impl Tool for RagTool {
     fn name(&self) -> &str { "custom-rag-text" }
-    fn description(&self) -> &str { "This is a RAG tool that retrieves text documents from a vector database using semantic search. It returns text data and a score for each retrieved document." }
+    fn description(&self) -> &str { r#"This is a RAG tool that retrieves text documents from a vector database using 
+    semantic search. It returns text data and a score for each retrieved document. Many of the documents retrieved will
+    have associated file paths. Some files will be chunked, as indicated by a '#number' suffix at the end of the path. 
+    The number indicates the chunk number of the retrieved item"# }
     fn input_schema(&self) -> ToolInputSchema { 
         ToolInputSchemaBuilder::default()
             .property("query", "string", "The query for searching the vector database")
@@ -19,6 +22,8 @@ impl Tool for RagTool {
             .as_str().ok_or("Unexpected argument type for parameter 'query'")?;
         let count = args.get("number_of_documents").ok_or("Arguments are missing a paramater 'number_of_documents'")?
             .as_u64().ok_or("Unexpected argument type for parameter 'number_of_documents'")?;
+
+        log::info!("Executing rag tool for {} results: {}", count, query);
 
         let default_collection = crate::common::config
             ::get_config::<String>(VECTORDB_CONFIG, DEFAULT_COLLECTION)?;

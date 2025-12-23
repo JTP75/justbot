@@ -167,26 +167,10 @@ impl PuetceApp {
         Ok(result)
     }
 
-    /// Store a file to locally hosted vector database
+    /// Store one or more files to locally hosted vector database
     /// 
     /// - collection_name must match the name of a valid collection
-    /// - path must resolve to the location of a file
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// bot.store_file("512_test_collection", "path/to/some/file.md")
-    /// ```
-    pub fn store_file(&self, collection_name: &str, path: &Path) -> Result<(),Box<dyn std::error::Error>> {
-        tokio::runtime::Runtime::new()?
-            .block_on(self.http_client.embed_files(collection_name, vec![path]))?;
-        Ok(())
-    }
-
-    /// Store multiple files to locally hosted vector database
-    /// 
-    /// - collection_name must match the name of a valid collection
-    /// - paths is a slice of Path references
+    /// - paths is a vec of Path references
     /// 
     /// # Examples
     /// 

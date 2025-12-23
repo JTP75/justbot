@@ -34,29 +34,6 @@ impl VoyageClient {
 
 #[async_trait::async_trait]
 impl EmbeddingClient for VoyageClient {
-    async fn get_embedding(&self, text: &str, input_type: &str) 
-    -> Result<Vec<f32>, Box<dyn std::error::Error>> {
-        let response = self.client
-            .post(&self.url)
-            .header("Authorization", format!("Bearer {}", self.api_key))
-            .json(&serde_json::json!({
-                "input": [text],
-                "model": self.model,
-                "input_type": input_type,
-            }))
-            .send().await?
-            .json::<serde_json::Value>().await?;
-
-        let result = response["data"][0]["embedding"].as_array();
-        match result {
-            Some(arr) => Ok(arr.iter().map(|v| v.as_f64().unwrap_or(0.0) as f32).collect()),
-            None => {
-                log::error!("Voyage API failed: {}", response);
-                Err("Embedding is null, voyage api request probably failed".into())
-            }
-        }
-    }
-
     async fn get_embeddings(&self, texts: Vec<&str>, input_type: &str) 
     -> Result<Vec<Vec<f32>>, Box<dyn std::error::Error>> {
         let response = self.client
@@ -94,16 +71,25 @@ impl EmbeddingClient for VoyageClient {
 }
 
 #[cfg(test)]
-mod tests {
+mod test {
     use super::*;
 
+    /// docker container with embedding service must be running
     #[tokio::test]
-    async fn test_embed_a_string() {
-        let client = VoyageClient::new().unwrap();
+    async fn test_embed_some_text() {
+        let client: Box<dyn EmbeddingClient> = Box::new(VoyageClient::new().unwrap());
 
-        let result = client.get_embedding("We want to embed this text!", "document").await;
-        assert!(result.is_ok());
+        let embedding = client.get_embeddings(vec!["Hello this is some text"], "document").await;
+        assert!(embedding.is_ok());
+        assert_eq!(embedding.unwrap().len(), 768);
+    }
 
-        println!("{:?}", result.unwrap())
+    /// docker container with embedding service must be running
+    #[tokio::test]
+    async fn test_embed_some_texts() {
+        let client: Box<dyn EmbeddingClient> = Box::new(VoyageClient::new().unwrap());
+
+        let embeddings = client.get_embeddings(vec!["Hello this is some text"; 1024], "document").await;
+        assert!(embeddings.is_ok());
     }
 }
