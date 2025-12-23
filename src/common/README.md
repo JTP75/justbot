@@ -7,8 +7,14 @@ The common module provides shared utilities and configurations used throughout P
 ### `config.rs`
 Configuration management and loading from JSON files and environment variables
 
+### `config_const.rs`
+Define public constants for config file names, keys, etc.
+
 ### `pdf.rs` 
 Utility module for converting PDFs to plain text
+
+### `chunking.rs`
+Utility module for chunking large text documents (not currently in use)
 
 ## Configuration
 
@@ -23,10 +29,4 @@ Configuration files are typically located in:
 
 ## Integration
 
-The common module is integrated throughout Puetce. Used in almost every module
-
-## Note
-
-The PDF module is still highly experimental. It requires the apt package `poppler-utils` to be installed.
-
-**This feature will most likely not work outside linux**
+The common module is integrated throughout Puetce

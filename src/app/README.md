@@ -7,12 +7,13 @@ The `app` module provides the fundamental components that power the chatbot's fu
 - Conversation session handling
 - Message processing and LLM interaction
 - RAG (Retrieval-Augmented Generation) pipeline integration
+- HTTP client connector
 - Startup/shutdown routines
 - Integration with tools
 
 ## Modules
 
-### `bot.rs`
+### `puetce.rs`
 
 The main bot implementation containing the `PuetceApp` struct.
 
@@ -21,10 +22,14 @@ The main bot implementation containing the `PuetceApp` struct.
 - Command routing
 - State management
 - Integration between project modules
-- Sync callbacks to async `ClientManager` methods
+- Sync callbacks to async `ConnectionManager` methods
 
-#### `ClientManager` Responsibilities
-- Async callbacks to client modules
+### `connection_manager.rs`
+
+Manages external HTTP/gRPC connections
+
+#### `ConnectionManager` Responsibilities
+- Async callbacks to anthropic, qdrant, and embedding services
 - Async routines involving two or more connection clients
     - e.g. searching the vector database requires calls to the voyage and qdrant clients
 
@@ -50,6 +55,17 @@ Saved session files include:
 - Maintain MCP server processes
 - Kill MCP server process
 
+### `http.rs`
+
+Implements HTTP server (using `axum`) and client (using `reqwest`)
+
+#### `HTTPServer` Responsibilities
+- Provide endpoints for each backend feature
+
+#### `HTTPClient` Responsibilities
+- Implement private HTTP methods
+- Provide public asynchronous callbacks for each server endpoint
+
 ## Integration
 
 ### With Commands
@@ -60,25 +76,24 @@ fn exec(&self, sm: &mut SessionManager, bot: &mut PuetceApp, args: &Vec<String>)
 ```
 
 This allows commands to:
-- Query and modify session state
-- Access bot configuration
+- Access/mutate session state
+- Access/mutate app state
 - Load/save sessions
 - Interact with conversation history
 - Any other task involving a mutable `PuetceApp` ref
 
 ### With Connection Clients
-The bot coordinates with external services:
+The PuetceApp coordinates with external services:
 - **AnthropicClient** - Sends conversation history to LLM
 - **QdrantClient** - Retrieves relevant context from vector database
-- **VoyageClient** - Generates embeddings for RAG queries
+- **EmbeddingClient** (trait) - Generates embeddings for RAG queries
 
 ### With RAG Pipeline
-The bot integrates RAG functionality:
-1. User query is embedded via Voyage AI
-2. Qdrant performs similarity search for relevant context
-3. Retrieved context is injected into system prompt
-4. Enhanced prompt sent to Anthropic Claude
-5. Response incorporates retrieved knowledge
+The PuetceApp integrates RAG functionality:
+1. Model tool call query is embedded using the embedding client (Voyage or local)
+2. Qdrant performs similarity search for relevant documents
+3. Put retrieved documents in tool response block
+4. Send the response back to Anthropic
 
 ## Configuration
 
@@ -99,27 +114,29 @@ Example data flow for tool use call involving RAG:
     ↓
 3. PuetceApp (coordinate first request)
     ↓
-4. AnthropicClient (send query + tools to anthropic)
+4. HTTPClient + HTTPServer (send appropriate request)
+    ↓
+5. AnthropicClient (send query + tools to anthropic)
     ├─→ Process query and tools
     └─→ Respond with tool use request
     ↓
-5. ToolManager (route tool use request)
+6. ToolManager (route tool use request)
     └─→ Execute RAG tool
     ↓
-6. RAG Pipeline
+7. RAG Pipeline
     ├─→ VoyageClient (embed query)
     ├─→ QdrantClient (similarity search)
     └─→ Context Retrieval
     ↓
-7. PuetceApp (coordinate second request)
+8. PuetceApp (coordinate second request)
     ↓
-8. AnthropicClient (send query + tools to anthropic)
+9. AnthropicClient (send query + tools to anthropic)
     ├─→ Process tool result
     └─→ Respond to user using tool results
     ↓
-9. Response Processing
+10. Response Processing
     ↓
-10. Output to User
+11. Output to User
 ```
 
 ## Error Handling

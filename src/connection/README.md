@@ -6,7 +6,7 @@ The key features are
 - **Async-first design** - All clients use Tokio for async operations
 - **Error handling** - Consistent `Result<T, Box<dyn std::error::Error>>` patterns
 - **Configuration loading** - Platform-specific directory paths via `directories` crate
-- **Reusable clients** - Designed for single instantiation and reuse throughout application lifecycle
+- **Reusable clients** - Designed for single instantiation and reuse throughout backend service lifecycle
 
 ## Modules
 
@@ -18,6 +18,9 @@ Client for local Qdrant vector database. Enables semantic search by storing and 
 
 ### `voyage_client.rs`
 Client for Voyage AI's embedding API. Converts text documents and queries into high-dimensional vectors for similarity search.
+
+### `local_embedding_client.rs`
+Client for communicating with local embedding service. Converts text documents and queries into high-dimensional vectors for similarity search.
 
 ### DEPRECATED `google_client.rs`
 Client for Google APIs including Calendar and Tasks integration.
@@ -31,4 +34,4 @@ API keys and settings are managed via:
 ## Integration
 
 The Connection Module Integrates with
-- **PuetceApp** (via `ClientManager`): Sync callbacks and routines for PuetceApp to use each client
+- **ConnectionManager**: Sync callbacks and routines for PuetceApp to use each client
