@@ -65,8 +65,11 @@ pub enum Source {
     },
 }
 
+// traits
+
 #[async_trait::async_trait]
 pub trait EmbeddingClient: Debug + Sync + Send {
+
     /// Get the embeddings for multiple input texts
     /// 
     /// - `input_text` can be either "document" or "query"
@@ -81,7 +84,27 @@ pub trait EmbeddingClient: Debug + Sync + Send {
 
 #[async_trait::async_trait]
 pub trait ChatClient: Debug + Sync + Send {
-    
+
+    /// sends a messages list, system prompt, tools list, model id, and 
+    /// temperature to an LLM API service and awaits a response
+    async fn call_model(
+        &self, 
+        messages: &Vec<Message>, 
+        sys_prompt: &str, 
+        tools: Option<&Vec<AnthropicToolDefinition>>, 
+        model: Option<String>,
+        randomness: f64
+    )
+    -> Result<MessagesResponse,Box<dyn std::error::Error>>;
+
+    /// retrieve the currently recorded tok/min
+    fn get_tpm(&self) -> (usize,usize);
+
+    /// retrieve the service/model tok/min rate limit
+    fn get_max_tpm(&self) -> (usize,usize);
+
+    /// Returns object as a dyn Any
+    fn as_any(&self) -> &dyn Any;
 }
 
 pub mod anthropic_client;

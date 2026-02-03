@@ -201,7 +201,7 @@ impl HttpEndpoint for GetTpmEndpoint {
     -> Result<Value, Box<dyn std::error::Error>> {
         log::debug!("Handling get_tpm request: {:?}", input);
         Ok(json!(cm.chat_client.as_ref()
-            .ok_or("anthropic client is not enabled")?.usage_monitor.tpm()))
+            .ok_or("anthropic client is not enabled")?.get_tpm()))
     }
 }
 
@@ -214,7 +214,7 @@ impl HttpEndpoint for GetMaxTpmEndpoint {
     -> Result<Value, Box<dyn std::error::Error>> {
         log::debug!("Handling get_max_tpm request: {:?}", input);
         Ok(json!(cm.chat_client.as_ref()
-            .ok_or("anthropic client is not enabled")?.usage_monitor.max_tpm()))
+            .ok_or("anthropic client is not enabled")?.get_max_tpm()))
     }
 }
 

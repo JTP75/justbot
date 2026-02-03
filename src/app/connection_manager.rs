@@ -7,14 +7,13 @@ use crate::{
             keys::{DEFAULT_SEARCH_LIMIT, ENABLE_ANTHROPIC, ENABLE_LOCAL, ENABLE_QDRANT, ENABLE_VOYAGE}
         }
     }, connection::{
-        EmbeddingClient, anthropic_client::AnthropicClient, local_embedding_client::LocalClient, 
-        qdrant_client::QdrantClient, voyage_client::VoyageClient
+        ChatClient, EmbeddingClient, anthropic_client::AnthropicClient, local_embedding_client::LocalClient, qdrant_client::QdrantClient, voyage_client::VoyageClient
     }
 };
 
 #[derive(Debug)]
 pub struct ConnectionManager {
-    pub chat_client: Option<AnthropicClient>,
+    pub chat_client: Option<Box<dyn ChatClient>>,
     pub vdb_client: Option<QdrantClient>,
     pub embedding_client: Option<Box<dyn EmbeddingClient>>,
 }
@@ -35,8 +34,8 @@ impl ConnectionManager {
             ::get_config(VECTORDB_CONFIG, ENABLE_QDRANT)
             .unwrap_or(false);
 
-        let chat_client = if use_anthropic {
-            Some(AnthropicClient::new().unwrap())
+        let chat_client: Option<Box<dyn ChatClient>> = if use_anthropic {
+            Some(Box::new(AnthropicClient::new().unwrap()))
         } else {
             None
         };

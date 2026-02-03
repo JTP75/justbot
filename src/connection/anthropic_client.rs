@@ -1,11 +1,11 @@
-use std::{collections::{HashMap, VecDeque}, sync::{Arc, Mutex}, time::{Duration, Instant}};
+use std::{any::Any, collections::{HashMap, VecDeque}, sync::{Arc, Mutex}, time::{Duration, Instant}};
 
 use dotenvy;
 
 use reqwest::{Client, ClientBuilder};
 use serde::{Deserialize, Serialize};
 
-use crate::{common::config_const::{json::ANTHROPIC_CONFIG, keys::{ANTHROPIC_VERSION, BASE_URL, DEFAULT_MODEL, MAX_INPUT_TPM, MAX_OUTPUT_TPM, MAX_TOKENS}}, connection::{AnthropicToolDefinition, Message, MessagesResponse}};
+use crate::{common::config_const::{json::ANTHROPIC_CONFIG, keys::{ANTHROPIC_VERSION, BASE_URL, DEFAULT_MODEL, MAX_INPUT_TPM, MAX_OUTPUT_TPM, MAX_TOKENS}}, connection::{AnthropicToolDefinition, ChatClient, Message, MessagesResponse}};
 
 // structs
 
@@ -161,8 +161,13 @@ impl AnthropicClient {
         })
     }
 
+}
+
+#[async_trait::async_trait]
+impl ChatClient for AnthropicClient {
+    
     /// Sends a list of messages, system prompt, and randomness (temperature) to the LLM and returns the response
-    pub async fn call_model(
+    async fn call_model(
         &self, 
         messages: &Vec<Message>, 
         sys_prompt: &str, 
@@ -262,6 +267,12 @@ cost for the past minute: ${:.6}"#,
             Ok(response)
         }
     }
+
+    fn get_tpm(&self) -> (usize,usize) { self.usage_monitor.tpm() }
+    
+    fn get_max_tpm(&self) -> (usize,usize) { self.usage_monitor.max_tpm() }
+
+    fn as_any(&self) -> &dyn Any { self }
 }
 
 // private helpers
