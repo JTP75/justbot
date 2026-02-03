@@ -9,7 +9,7 @@ use crate::commands::{self, Command};
 use crate::common::config;
 use crate::common::config_const::json::{ANTHROPIC_CONFIG, MOTD_FILENAME};
 use crate::common::config_const::keys::DEFAULT_MODEL;
-use crate::connection::anthropic_client::{AnthropicToolDefinition, ContentBlock, Message, MessagesResponse, Role, Source, ToolResultContentBlock};
+use crate::connection::{AnthropicToolDefinition, ContentBlock, Message, MessagesResponse, Role, Source, ToolResultContentBlock};
 
 #[derive(Debug)]
 pub struct PuetceApp {

@@ -1,6 +1,6 @@
 #![allow(deprecated)]
 
-use crate::{app::{puetce::PuetceApp, session::SessionManager}, common::config_const::{json::VECTORDB_CONFIG, keys::DEFAULT_COLLECTION, prompts::SYSTEM_RAG}, connection::anthropic_client::{ContentBlock, Message, Role}};
+use crate::{app::{puetce::PuetceApp, session::SessionManager}, common::config_const::{json::VECTORDB_CONFIG, keys::DEFAULT_COLLECTION, prompts::SYSTEM_RAG}, connection::{ContentBlock, Message, Role}};
 
 use super::{Command, REGISTRY};
 

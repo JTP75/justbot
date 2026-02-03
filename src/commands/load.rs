@@ -1,5 +1,5 @@
 use crate::app::{puetce::PuetceApp, session::SessionManager};
-use crate::connection::anthropic_client::{ContentBlock, Role};
+use crate::connection::{ContentBlock, Role};
 
 use super::{Command, REGISTRY};
 

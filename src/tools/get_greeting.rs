@@ -1,4 +1,4 @@
-use crate::{app::connection_manager::ConnectionManager, connection::anthropic_client::ToolResultContentBlock, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
+use crate::{app::connection_manager::ConnectionManager, connection::ToolResultContentBlock, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
 
 use super::{Tool, REGISTRY};
 

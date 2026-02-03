@@ -4,7 +4,7 @@ pub mod client;
 use serde::{Deserialize, Serialize};
 use derive_builder::Builder;
 
-use crate::connection::anthropic_client::AnthropicToolDefinition;
+use crate::connection::AnthropicToolDefinition;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct McpTool {

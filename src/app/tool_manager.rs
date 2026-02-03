@@ -3,7 +3,7 @@
 use std::{collections::HashMap, sync::Mutex};
 
 use crate::{
-    app::connection_manager::ConnectionManager, common::config_const::{json::BOT_CONFIG, keys::ENABLE_CUSTOM_TOOLS}, connection::anthropic_client::{AnthropicToolDefinition, ToolResultContentBlock}, mcp::{McpContent, McpTool, client::McpClient}, tools::{self, Tool}
+    app::connection_manager::ConnectionManager, common::config_const::{json::BOT_CONFIG, keys::ENABLE_CUSTOM_TOOLS}, connection::{AnthropicToolDefinition, ToolResultContentBlock}, mcp::{McpContent, McpTool, client::McpClient}, tools::{self, Tool}
 };
 
 pub struct ToolManager {

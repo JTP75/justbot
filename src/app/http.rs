@@ -11,7 +11,7 @@ use derive_builder::Builder;
 
 use crate::{
     app::{connection_manager::ConnectionManager, tool_manager::ToolManager}, 
-    common::{config, config_const::{json::{BOT_CONFIG, MOTD_FILENAME}, keys::{CLIENT_HOST, HOST, PORT}}}, connection::{anthropic_client::{AnthropicToolDefinition, Message, MessagesResponse, ToolResultContentBlock}, local_embedding_client, voyage_client}
+    common::{config, config_const::{json::{BOT_CONFIG, MOTD_FILENAME}, keys::{CLIENT_HOST, HOST, PORT}}}, connection::{AnthropicToolDefinition, Message, MessagesResponse, ToolResultContentBlock, local_embedding_client, voyage_client}
 };
 
 // lazy mutex for server state
@@ -802,7 +802,7 @@ async fn shutdown_signal() {
 #[cfg(test)]
 mod tests {
 
-    use crate::connection::anthropic_client::{ContentBlock, Role};
+    use crate::connection::{ContentBlock, Role};
 
     use super::*;
 

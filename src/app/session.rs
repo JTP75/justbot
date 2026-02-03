@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::common::config_const::json::MOTD_FILENAME;
 use crate::common::config_const::prompts::SYSTEM_BASE;
 use crate::{common::config, app::puetce::PuetceApp};
-use crate::connection::anthropic_client::{Message, ContentBlock, Role};
+use crate::connection::{Message, ContentBlock, Role};
 
 /// Serializable struct that can be saved to a json file
 /// 

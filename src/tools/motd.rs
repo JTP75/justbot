@@ -2,7 +2,7 @@ use std::fs;
 
 use chrono::Local;
 
-use crate::{app::{connection_manager::ConnectionManager, http::APP_STATE}, common::{config, config_const::json::MOTD_FILENAME}, connection::anthropic_client::ToolResultContentBlock, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
+use crate::{app::{connection_manager::ConnectionManager, http::APP_STATE}, common::{config, config_const::json::MOTD_FILENAME}, connection::ToolResultContentBlock, tools::{ToolInputSchema, ToolInputSchemaBuilder}};
 
 use super::{Tool, REGISTRY};
 

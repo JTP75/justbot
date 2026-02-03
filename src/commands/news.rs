@@ -1,4 +1,4 @@
-use crate::{app::{puetce::PuetceApp, session::SessionManager}, common::config_const::prompts::SYSTEM_TOOL, connection::anthropic_client::{ContentBlock, Message, Role}};
+use crate::{app::{puetce::PuetceApp, session::SessionManager}, common::config_const::prompts::SYSTEM_TOOL, connection::{ContentBlock, Message, Role}};
 
 use super::{Command, REGISTRY};
 

@@ -5,7 +5,7 @@ use derive_builder::Builder;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-use crate::{app::connection_manager::ConnectionManager, connection::anthropic_client::{AnthropicToolDefinition, ToolResultContentBlock}};
+use crate::{app::connection_manager::ConnectionManager, connection::{AnthropicToolDefinition, ToolResultContentBlock}};
 
 pub trait Tool: Sync + Send {
     // templates
