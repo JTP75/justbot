@@ -108,6 +108,7 @@ pub trait ChatClient: Debug + Sync + Send {
 }
 
 pub mod anthropic_client;
+pub mod zai_client;
 pub mod qdrant_client;
 pub mod voyage_client;
 pub mod local_embedding_client;
